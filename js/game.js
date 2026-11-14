@@ -8,18 +8,21 @@
     normal: { time: 7, hp: 4, lanes: 3 },
     hard: { time: 4.5, hp: 3, lanes: 4 },
   };
-  const MAX_QUESTIONS = 20;
-  const BOSS_HP = 5;
+  const NORMAL_QUESTIONS = 7; // 一局 10 題：7 題一般題 + 魔王 3 題
+  const BOSS_HP = 3;
+  const ROUND = NORMAL_QUESTIONS + BOSS_HP;
+  const bossImg = new Image();
+  bossImg.src = 'assets/boss.png';
   const JP_FONT = '"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP","Noto Sans CJK JP","Meiryo",sans-serif';
   const ZH_FONT = '"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif';
   const SPEAKER_SVG = '<svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
 
   // ---------- 存檔 ----------
   const SAVE_KEY = 'jt-save-v1';
-  const save = { settings: { speed: 'normal', listening: false, sound: true }, progress: {} };
+  const save = { settings: { speed: 'normal', listening: false, sound: true }, progress: {}, notebook: [] };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s) { Object.assign(save.settings, s.settings); Object.assign(save.progress, s.progress); }
+    if (s) { Object.assign(save.settings, s.settings); Object.assign(save.progress, s.progress); if (Array.isArray(s.notebook)) save.notebook = s.notebook.filter((it) => it && it.k && (it.r || it.z)); }
   } catch (e) { /* 沒有存檔或無法讀取時使用預設值 */ }
   if (!SPEEDS[save.settings.speed]) save.settings.speed = 'normal';
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* 忽略 */ } };
@@ -33,6 +36,58 @@
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   const starsHtml = (n) => `<b>${'★'.repeat(n)}</b>${'★'.repeat(3 - n)}`;
   const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---------- 筆記本 ----------
+  const itemKey = (it) => (it.r ? `k:${it.k}` : `w:${it.j}|${it.k}`);
+  const inNotebook = (it) => save.notebook.some((n) => itemKey(n) === itemKey(it));
+  function setNotebook(it, on) {
+    const has = inNotebook(it);
+    if (on && !has) save.notebook.push(it.r ? { k: it.k, r: it.r } : { j: it.j, k: it.k, z: it.z });
+    else if (!on && has) save.notebook = save.notebook.filter((n) => itemKey(n) !== itemKey(it));
+    persist();
+  }
+  const ALL_ITEMS = LEVELS.flatMap((lv) => lv.stages.flatMap((st) => st.items));
+  const NOTEBOOK_MIN = 3;
+
+  // 單字列：mark 為 true/false 時顯示答對或答錯
+  function wordRow(it, i, mark) {
+    const on = inNotebook(it);
+    const body = it.r
+      ? `<span class="mj" lang="ja">${esc(it.k)}</span><span class="mz">${esc(it.r)}</span>`
+      : `<span class="mj" lang="ja">${esc(it.j || it.k)}</span>${it.j ? `<span class="mk" lang="ja">${esc(it.k)}</span>` : ''}<span class="mz">${esc(it.z)}</span>`;
+    return `<li class="${mark === false ? 'miss' : ''}">${mark === undefined ? '' : `<span class="mark">${mark ? '○' : '×'}</span>`}${body}`
+      + `${synth ? `<button class="say-btn" data-say="${i}" aria-label="聽發音">${SPEAKER_SVG}</button>` : ''}`
+      + `<button class="nb-btn${on ? ' on' : ''}" data-nb="${i}">${on ? '已加入' : '＋筆記'}</button></li>`;
+  }
+  // 綁定單字列表的點擊：發音與加入／移出筆記本
+  function bindList(el, items, onChange) {
+    el.onclick = (e) => {
+      const sb = e.target.closest('[data-say]');
+      if (sb) return say(items[+sb.dataset.say].k);
+      const nb = e.target.closest('[data-nb]');
+      if (nb) { const it = items[+nb.dataset.nb]; setNotebook(it, !inNotebook(it)); onChange(); }
+    };
+  }
+
+  function renderNotebook() {
+    const items = save.notebook.slice();
+    const n = items.length;
+    $('#notebookCount').textContent = n ? `共 ${n} 個` : '';
+    $('#notebookEmpty').classList.toggle('hidden', n > 0);
+    $('#notebookPlay').disabled = n < NOTEBOOK_MIN;
+    $('#notebookHint').textContent = n < NOTEBOOK_MIN ? `至少要有 ${NOTEBOOK_MIN} 個字才能開始特訓` : `從筆記本出 ${ROUND} 題，速度與聽力依首頁設定`;
+    const draw = () => { $('#notebookList').innerHTML = items.map((it, i) => wordRow(it, i)).join(''); };
+    draw();
+    // 在這個畫面取消後先保留在清單上，方便反悔；離開再回來才會消失
+    bindList($('#notebookList'), items, () => {
+      draw();
+      const m = save.notebook.length;
+      $('#notebookCount').textContent = m ? `共 ${m} 個` : '';
+      $('#notebookPlay').disabled = m < NOTEBOOK_MIN;
+      $('#notebookHint').textContent = m < NOTEBOOK_MIN ? `至少要有 ${NOTEBOOK_MIN} 個字才能開始特訓` : `從筆記本出 ${ROUND} 題，速度與聽力依首頁設定`;
+    });
+    show('notebook');
+  }
 
   // ---------- 語音與音效 ----------
   const synth = window.speechSynthesis;
@@ -111,6 +166,7 @@
         <span class="card-main"><div class="card-name">${lv.name}</div><div class="card-desc">${lv.desc}・${lv.stages.length} 關</div></span>
         <span class="card-side">★ ${levelStars(lv)}/${lv.stages.length * 3}</span>
       </button>`).join('');
+    $('#notebookDesc').textContent = save.notebook.length ? `已收錄 ${save.notebook.length} 個字，可以用來特訓` : '過關後可以把想記的字加進來';
     refreshSettings();
   }
 
@@ -198,20 +254,30 @@
   const laneOf = (x) => Math.max(0, Math.min(g.lanes - 1, Math.floor(x / laneW())));
   const laneX = (i) => (i + 0.5) * laneW();
 
-  function startStage(li, si) {
-    const level = LEVELS[li]; const stage = level.stages[si];
+  // spec 為 { li, si }（一般關卡）或 { notebook: true }（筆記本特訓）
+  function startGame(spec) {
     const sp = SPEEDS[save.settings.speed];
-    const queue = shuffle(stage.items).slice(0, MAX_QUESTIONS);
+    let level = null; let stage;
+    if (spec.notebook) stage = { id: 'notebook', name: '筆記本特訓', items: save.notebook.slice() };
+    else { level = LEVELS[spec.li]; stage = level.stages[spec.si]; }
+    // 抽出本局的題目；字數不足時重複出題補滿
+    let plan = [];
+    while (plan.length < ROUND) {
+      const more = shuffle(stage.items);
+      if (plan.length && more.length > 1 && more[0] === plan[plan.length - 1]) more.push(more.shift());
+      plan = plan.concat(more);
+    }
+    plan = plan.slice(0, ROUND);
     show('game');
     resize();
     g = {
-      li, si, level, stage, sp,
+      spec, li: spec.li, si: spec.si, level, stage, sp,
       lanes: sp.lanes,
       listening: save.settings.listening && listeningAvailable(),
-      dur: sp.time * (level.vocab ? 1.3 : 1),
-      queue, total: queue.length, done: 0,
-      phase: 'normal', bossHp: BOSS_HP, bossHurt: 0, bossPool: [],
-      hp: sp.hp, score: 0, combo: 0, mistakes: 0, missed: new Map(),
+      queue: plan.slice(0, NORMAL_QUESTIONS), bossQueue: plan.slice(NORMAL_QUESTIONS), retry: [],
+      total: NORMAL_QUESTIONS, done: 0, log: [],
+      phase: 'normal', bossHp: BOSS_HP, bossHurt: 0,
+      hp: sp.hp, score: 0, combo: 0, mistakes: 0,
       px: W / 2, tx: W / 2, pendingFire: false, cool: 0, hurt: 0, shake: 0,
       bullets: [], particles: [], wave: null, waves: 0,
       banner: { text: stage.name, t: 1.3 },
@@ -257,13 +323,15 @@
   }
 
   function spawnWave(item) {
-    const pool = g.stage.items;
+    // 錯誤選項從同類型的字裡挑；筆記本特訓時字可能不夠，改從整個題庫補
+    const same = (it) => !!it.r === !!item.r;
+    const pool = (g.spec.notebook ? g.stage.items.concat(ALL_ITEMS) : g.stage.items).filter(same);
     const q = buildQuestion(item, pool, g.lanes, g.listening);
     const boss = g.phase === 'boss';
-    const startY = boss ? 176 : 44;
+    const startY = boss ? 186 : 44;
     g.wave = {
       q, state: 'in', t: 0, rt: 0,
-      dur: g.dur * (boss ? 0.85 : 1),
+      dur: g.sp.time * (item.r ? 1 : 1.3) * (boss ? 0.85 : 1),
       startY, endY: planeY() - 118,
       enemies: q.options.map((o, i) => ({ opt: o, lane: i, x: laneX(i), y: startY, h: o.ruby ? 52 : 44, look: (g.waves * 3 + i) % 4, state: 'alive', vy: 0, pop: 0 })),
     };
@@ -278,8 +346,6 @@
     if (g.phase === 'normal') {
       if (!g.queue.length) {
         g.phase = 'boss'; g.wave = null;
-        const missed = [...g.missed.keys()];
-        g.bossPool = [...shuffle(g.stage.items.filter((it) => !g.missed.has(it))), ...shuffle(missed)];
         g.banner = { text: '魔王出現了！', t: 1.6 };
         setPrompt(null); sfx('boss'); updateHud();
         return;
@@ -287,8 +353,8 @@
       spawnWave(g.queue.shift());
     } else {
       if (g.bossHp <= 0) return finish(true);
-      if (!g.bossPool.length) g.bossPool = shuffle(g.stage.items);
-      spawnWave(g.bossPool.pop());
+      // 魔王優先考前面答錯的字
+      spawnWave(g.retry.shift() || g.bossQueue.shift() || pick(g.stage.items));
     }
   }
 
@@ -303,7 +369,7 @@
   function resolve(enemy) {
     const w = g.wave;
     if (!w || w.state !== 'in') return;
-    const ok = !!enemy && enemy.opt.correct;
+    const ok = !!(enemy && enemy.opt.correct);
     const item = w.q.item;
     w.state = 'reveal';
     if (ok) {
@@ -314,22 +380,22 @@
       w.enemies.forEach((e) => { if (e !== enemy) { e.state = 'flee'; e.vy = -260; } });
       if (g.phase === 'boss') {
         g.bossHp--; g.bossHurt = 0.5;
-        burst(W / 2, 70, '#c9a4ff', g.bossHp <= 0 ? 60 : 14);
-      } else g.done++;
+        burst(W / 2, 70, g.bossHp <= 0 ? '#ffd24d' : '#ff8fab', g.bossHp <= 0 ? 60 : 14);
+      }
       w.rt = g.phase === 'boss' && g.bossHp <= 0 ? 1.6 : 1.0;
       sfx('ok');
       setPrompt(w.q, 'ok');
     } else {
       g.hp--; g.combo = 0; g.mistakes++;
       g.hurt = 0.6; g.shake = 0.35;
-      g.missed.set(item, (g.missed.get(item) || 0) + 1);
-      // 答錯的題目稍後再出現一次，直到答對為止
-      if (g.phase === 'normal') g.queue.splice(Math.min(g.queue.length, 2 + Math.floor(Math.random() * 2)), 0, item);
+      g.retry.push(item);
       w.enemies.forEach((e) => { e.state = e.opt.correct ? 'answer' : e === enemy ? 'wrong' : 'faded'; });
       w.rt = 2.4;
       sfx('bad');
       setPrompt(w.q, enemy ? 'bad' : 'timeout');
     }
+    g.log.push({ item, ok });
+    if (g.phase === 'normal') g.done++;
     if (save.settings.sound) say(item.k);
     updateHud();
   }
@@ -346,32 +412,45 @@
     cancelAnimationFrame(raf);
     if (synth) { /* 讓最後一個字唸完，不取消 */ }
     const stars = !win ? 0 : g.mistakes === 0 ? 3 : g.mistakes <= 2 ? 2 : 1;
+    const custom = !!g.spec.notebook;
     const p = save.progress[g.stage.id] || { stars: 0, best: 0 };
-    const newBest = win && g.score > (p.best || 0);
-    if (win) { p.stars = Math.max(p.stars || 0, stars); p.best = Math.max(p.best || 0, g.score); save.progress[g.stage.id] = p; persist(); }
+    const newBest = !custom && win && g.score > (p.best || 0);
+    if (win && !custom) { p.stars = Math.max(p.stars || 0, stars); p.best = Math.max(p.best || 0, g.score); save.progress[g.stage.id] = p; persist(); }
     sfx(win ? 'clear' : 'over');
 
     $('#resultTitle').textContent = win ? '過關！' : '再挑戰一次吧';
     $('#resultStars').innerHTML = starsHtml(stars);
     $('#resultStars').classList.toggle('hidden', !win);
     $('#resultScore').textContent = g.score;
-    $('#resultBest').textContent = newBest ? '新紀錄！' : p.best ? `（最高 ${p.best}）` : '';
-    const missed = [...g.missed.keys()];
-    $('#missWrap').classList.toggle('hidden', !missed.length);
-    $('#missList').innerHTML = missed.map((it, i) => {
-      const body = it.r
-        ? `<span class="mj" lang="ja">${esc(it.k)}</span><span class="mz">${esc(it.r)}</span>`
-        : `<span class="mj" lang="ja">${esc(it.j || it.k)}</span>${it.j ? `<span class="mk" lang="ja">${esc(it.k)}</span>` : ''}<span class="mz">${esc(it.z)}</span>`;
-      return `<li>${body}${synth ? `<button data-say="${i}" aria-label="聽發音">${SPEAKER_SVG}</button>` : ''}</li>`;
-    }).join('');
-    $('#missList').onclick = (e) => { const b = e.target.closest('[data-say]'); if (b) say(missed[+b.dataset.say].k); };
+    $('#resultBest').textContent = custom ? '' : newBest ? '新紀錄！' : p.best ? `（最高 ${p.best}）` : '';
+
+    // 本局出過的所有題目；同一個字出現多次時，只要錯過一次就標為答錯
+    const rows = [];
+    for (const { item, ok } of g.log) {
+      const r = rows.find((x) => x.item === item);
+      if (r) r.ok = r.ok && ok; else rows.push({ item, ok });
+    }
+    const items = rows.map((r) => r.item);
+    const drawRows = () => {
+      $('#roundList').innerHTML = rows.map((r, i) => wordRow(r.item, i, r.ok)).join('');
+      const pending = rows.filter((r) => !r.ok && !inNotebook(r.item)).length;
+      $('#addMissedBtn').classList.toggle('hidden', !pending);
+      $('#addMissedBtn').textContent = `答錯的 ${pending} 個全部加入筆記本`;
+    };
+    drawRows();
+    bindList($('#roundList'), items, drawRows);
+    $('#addMissedBtn').onclick = () => { rows.forEach((r) => { if (!r.ok) setNotebook(r.item, true); }); drawRows(); };
+    $('#roundWrap').classList.toggle('hidden', !rows.length);
+
     const hasNext = !!nextStage();
     $('#nextBtn').classList.toggle('hidden', !win || !hasNext);
     $('#retryBtn').classList.toggle('primary', !win || !hasNext);
+    $('#menuBtn').textContent = custom ? '回筆記本' : '回選單';
     show('result');
   }
 
   function nextStage() {
+    if (g.spec.notebook) return null;
     if (g.si + 1 < g.level.stages.length) return [g.li, g.si + 1];
     if (g.li + 1 < LEVELS.length) return [g.li + 1, 0];
     return null;
@@ -506,20 +585,21 @@
 
   function drawBoss() {
     const hurt = g.bossHurt > 0;
-    const x = W / 2 + (hurt ? Math.sin(g.time * 60) * 4 : 0); const y = 66 + Math.sin(g.time * 2) * 4;
-    ctx.fillStyle = hurt ? '#e6d4ff' : '#b79cf2';
-    ctx.beginPath(); ctx.arc(x - 34, y - 30, 14, 0, 7); ctx.arc(x + 34, y - 30, 14, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(x, y, 58, 46, 0, 0, 7); ctx.fill();
-    // 皇冠
-    ctx.fillStyle = '#ffd24d';
-    ctx.beginPath(); ctx.moveTo(x - 20, y - 40); ctx.lineTo(x - 22, y - 60); ctx.lineTo(x - 10, y - 50); ctx.lineTo(x, y - 64);
-    ctx.lineTo(x + 10, y - 50); ctx.lineTo(x + 22, y - 60); ctx.lineTo(x + 20, y - 40); ctx.closePath(); ctx.fill();
-    face(x, y - 4, 2, hurt ? 'dizzy' : 'normal');
+    const x = W / 2 + (hurt ? Math.sin(g.time * 60) * 5 : 0); const y = 70 + Math.sin(g.time * 2) * 4;
+    const bw = 168; const bh = bossImg.naturalWidth ? bw * bossImg.naturalHeight / bossImg.naturalWidth : 105;
+    if (bossImg.naturalWidth) {
+      ctx.save();
+      if (hurt && Math.floor(g.time * 20) % 2) ctx.globalAlpha = 0.45;
+      ctx.drawImage(bossImg, x - bw / 2, y - bh / 2, bw, bh);
+      ctx.restore();
+    } else { // 圖片還沒載入時的替代圖形
+      ctx.fillStyle = '#b79cf2'; ctx.beginPath(); ctx.ellipse(x, y, 58, 46, 0, 0, 7); ctx.fill();
+    }
     // 血條
-    const bw = 120;
-    ctx.fillStyle = 'rgba(74,64,99,.2)'; rr(x - bw / 2, y + 52, bw, 10, 5); ctx.fill();
+    const w = 120; const by = 70 + bh / 2 + 10;
+    ctx.fillStyle = 'rgba(74,64,99,.2)'; rr(W / 2 - w / 2, by, w, 10, 5); ctx.fill();
     const ratio = Math.max(0, g.bossHp) / BOSS_HP;
-    if (ratio > 0) { ctx.fillStyle = '#f76a8c'; rr(x - bw / 2, y + 52, Math.max(10, bw * ratio), 10, 5); ctx.fill(); }
+    if (ratio > 0) { ctx.fillStyle = '#f76a8c'; rr(W / 2 - w / 2, by, Math.max(10, w * ratio), 10, 5); ctx.fill(); }
   }
 
   function drawPlane() {
@@ -585,12 +665,27 @@
     }
   }
 
+  // 倒數計時：剩餘秒數與進度條
+  function updateTimer() {
+    const w = g.wave; const on = !!w && w.state === 'in';
+    const el = $('#timer');
+    el.classList.toggle('hidden', !on);
+    if (!on) { $('#timerBar').style.width = '0'; return; }
+    const left = Math.max(0, w.dur - w.t);
+    const secs = String(Math.ceil(left));
+    if ($('#timerNum').textContent !== secs) $('#timerNum').textContent = secs;
+    el.classList.toggle('urgent', left <= 3);
+    $('#timerBar').style.width = `${left / w.dur * 100}%`;
+    $('#timerBar').classList.toggle('urgent', left <= 3);
+  }
+
   let raf = 0; let last = 0;
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (!g.paused) update(dt);
     if (g.over) return;
     draw();
+    updateTimer();
     raf = requestAnimationFrame(loop);
   }
 
@@ -650,16 +745,20 @@
   });
   $('#soundToggle').addEventListener('click', () => { save.settings.sound = !save.settings.sound; persist(); refreshSettings(); sfx('ok'); });
   $('#levelList').addEventListener('click', (e) => { const b = e.target.closest('[data-level]'); if (b) renderStages(+b.dataset.level); });
-  $('#stageList').addEventListener('click', (e) => { const b = e.target.closest('[data-stage]'); if (b) startStage(curLevel, +b.dataset.stage); });
+  $('#stageList').addEventListener('click', (e) => { const b = e.target.closest('[data-stage]'); if (b) startGame({ li: curLevel, si: +b.dataset.stage }); });
   $('#stagesBack').addEventListener('click', () => { renderHome(); show('home'); });
   $('#pauseBtn').addEventListener('click', () => setPaused(true));
   $('#resumeBtn').addEventListener('click', () => { setPaused(false); last = performance.now(); });
-  $('#restartBtn').addEventListener('click', () => startStage(g.li, g.si));
-  $('#quitBtn').addEventListener('click', () => { g.over = true; cancelAnimationFrame(raf); renderStages(g.li); });
+  $('#restartBtn').addEventListener('click', () => startGame(g.spec));
+  const leave = () => (g.spec.notebook ? renderNotebook() : renderStages(g.li));
+  $('#quitBtn').addEventListener('click', () => { g.over = true; cancelAnimationFrame(raf); if (synth) synth.cancel(); leave(); });
   $('#promptBox').addEventListener('click', () => { if (g && g.wave && g.wave.state === 'in' && g.wave.q.kind === 'listen') say(g.wave.q.item.k); });
-  $('#retryBtn').addEventListener('click', () => startStage(g.li, g.si));
-  $('#nextBtn').addEventListener('click', () => { const n = nextStage(); if (n) startStage(n[0], n[1]); });
-  $('#menuBtn').addEventListener('click', () => renderStages(g.li));
+  $('#retryBtn').addEventListener('click', () => startGame(g.spec));
+  $('#nextBtn').addEventListener('click', () => { const n = nextStage(); if (n) startGame({ li: n[0], si: n[1] }); });
+  $('#menuBtn').addEventListener('click', leave);
+  $('#notebookCard').addEventListener('click', renderNotebook);
+  $('#notebookBack').addEventListener('click', () => { renderHome(); show('home'); });
+  $('#notebookPlay').addEventListener('click', () => { if (save.notebook.length >= NOTEBOOK_MIN) startGame({ notebook: true }); });
 
   if (synth) {
     findVoice();

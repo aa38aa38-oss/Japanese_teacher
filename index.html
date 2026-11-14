@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#bfe3ff">
+  <title>日語小飛機｜邊玩邊學日文</title>
+  <meta name="description" content="可愛的日語學習射擊遊戲：把飛機移到正確答案下方發射，從五十音一路學到基礎與中等單字。">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <section id="home" class="screen active">
+    <header class="title">
+      <h1>日語小飛機</h1>
+      <p lang="ja">にほんご・フライト</p>
+    </header>
+
+    <div class="panel">
+      <div class="setting">
+        <span class="setting-label">速度</span>
+        <div class="seg" id="speedSeg">
+          <button data-speed="easy">輕鬆</button>
+          <button data-speed="normal">普通</button>
+          <button data-speed="hard">困難</button>
+        </div>
+      </div>
+      <div class="setting">
+        <span class="setting-label">聽力測驗<small id="listenNote">混入「聽發音選答案」的題目</small></span>
+        <button class="toggle" id="listenToggle" aria-pressed="false"><i></i></button>
+      </div>
+      <div class="setting">
+        <span class="setting-label">音效與發音<small>答題後唸出讀音</small></span>
+        <button class="toggle" id="soundToggle" aria-pressed="true"><i></i></button>
+      </div>
+    </div>
+
+    <h2 class="section-title">選擇等級</h2>
+    <div id="levelList" class="level-list"></div>
+    <p class="footnote">進度只會存在你的瀏覽器裡，不需要帳號。</p>
+  </section>
+
+  <section id="stages" class="screen">
+    <div class="topbar">
+      <button class="back" id="stagesBack" aria-label="返回">‹</button>
+      <h2 id="stagesTitle"></h2>
+    </div>
+    <div id="stageList" class="stage-list"></div>
+  </section>
+
+  <section id="game" class="screen">
+    <div class="hud">
+      <div id="hearts" class="hearts"></div>
+      <div id="progress" class="progress"></div>
+      <div id="score" class="score">0</div>
+      <button id="pauseBtn" class="pause-btn" aria-label="暫停">Ⅱ</button>
+    </div>
+    <div id="promptBox" class="prompt">
+      <div id="promptHint" class="prompt-hint"></div>
+      <div id="promptText" class="prompt-text"></div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="canvas"></canvas>
+      <div id="pauseOverlay" class="overlay hidden">
+        <div class="overlay-card">
+          <h3>暫停中</h3>
+          <button class="btn primary" id="resumeBtn">繼續</button>
+          <button class="btn" id="restartBtn">重新開始</button>
+          <button class="btn" id="quitBtn">離開關卡</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="result" class="screen">
+    <div class="result-card">
+      <h2 id="resultTitle"></h2>
+      <div id="resultStars" class="stars big"></div>
+      <div class="result-score">分數 <b id="resultScore">0</b><span id="resultBest"></span></div>
+      <div id="missWrap">
+        <h3 id="missTitle">需要再複習的字</h3>
+        <ul id="missList" class="miss-list"></ul>
+      </div>
+      <div class="result-actions">
+        <button class="btn primary" id="nextBtn">下一關</button>
+        <button class="btn" id="retryBtn">再玩一次</button>
+        <button class="btn" id="menuBtn">回選單</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

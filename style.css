@@ -1,0 +1,131 @@
+:root {
+  --ink: #4a4063;
+  --ink-soft: #8a80a3;
+  --pink: #ff8fab;
+  --pink-deep: #f76a8c;
+  --sky: #bfe3ff;
+  --cream: #fffaf3;
+  --mint: #8fd9a8;
+  --card: #ffffff;
+  --jp: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", "Noto Sans CJK JP", "Meiryo", sans-serif;
+  --zh: "PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: var(--zh);
+  color: var(--ink);
+  background: linear-gradient(180deg, #d9efff 0%, #ffe9f1 100%);
+  overscroll-behavior: none;
+}
+[lang="ja"] { font-family: var(--jp); }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+
+#app { max-width: 480px; height: 100dvh; margin: 0 auto; position: relative; }
+.screen { display: none; height: 100%; overflow-y: auto; padding: 20px 16px calc(24px + env(safe-area-inset-bottom)); }
+.screen.active { display: block; }
+#game.active { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+
+/* 首頁 */
+.title { text-align: center; padding: 18px 0 14px; }
+.title h1 { margin: 0; font-size: 38px; letter-spacing: 2px; color: var(--pink-deep); text-shadow: 0 3px 0 #fff, 0 6px 0 rgba(247, 106, 140, .18); }
+.title p { margin: 6px 0 0; color: var(--ink-soft); font-weight: 700; letter-spacing: 3px; }
+
+.panel { background: var(--card); border-radius: 22px; padding: 6px 16px; box-shadow: 0 6px 0 rgba(74, 64, 99, .08); }
+.setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; }
+.setting + .setting { border-top: 2px dashed #f1e9f5; }
+.setting-label { font-weight: 700; display: flex; flex-direction: column; }
+.setting-label small { font-weight: 400; font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+.seg { display: flex; background: #f4eef8; border-radius: 999px; padding: 4px; }
+.seg button { padding: 8px 14px; border-radius: 999px; font-weight: 700; color: var(--ink-soft); }
+.seg button.on { background: var(--pink); color: #fff; box-shadow: 0 3px 0 var(--pink-deep); }
+
+.toggle { width: 54px; height: 32px; border-radius: 999px; background: #e3dcea; position: relative; flex: none; transition: background .15s; }
+.toggle i { position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 2px 0 rgba(0, 0, 0, .12); }
+.toggle[aria-pressed="true"] { background: var(--mint); }
+.toggle[aria-pressed="true"] i { transform: translateX(22px); }
+.toggle:disabled { opacity: .45; cursor: not-allowed; }
+
+.section-title { font-size: 18px; margin: 22px 4px 10px; }
+.level-list, .stage-list { display: grid; gap: 12px; }
+.level-card, .stage-card {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  background: var(--card); border-radius: 20px; padding: 14px 16px;
+  box-shadow: 0 6px 0 rgba(74, 64, 99, .08); transition: transform .08s, box-shadow .08s;
+}
+.level-card:active, .stage-card:active, .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(74, 64, 99, .08); }
+.level-icon {
+  flex: none; width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center;
+  font-family: var(--jp); font-weight: 800; font-size: 26px; color: #fff;
+}
+.level-icon.small { font-size: 19px; }
+.level-card:nth-child(1) .level-icon { background: #ff9fb6; }
+.level-card:nth-child(2) .level-icon { background: #8ec5ff; }
+.level-card:nth-child(3) .level-icon { background: #b79cf2; }
+.level-card:nth-child(4) .level-icon { background: #7fd3a0; }
+.level-card:nth-child(5) .level-icon { background: #ffb866; }
+.card-main { flex: 1; min-width: 0; }
+.card-name { font-weight: 800; font-size: 18px; }
+.card-desc { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+.card-side { font-size: 13px; color: var(--ink-soft); font-weight: 700; white-space: nowrap; }
+.stage-num { flex: none; width: 38px; height: 38px; border-radius: 50%; background: #f4eef8; display: grid; place-items: center; font-weight: 800; }
+.stars { color: #e6deee; letter-spacing: 2px; font-size: 18px; white-space: nowrap; }
+.stars b { color: #ffc93c; font-weight: 400; }
+.stars.big { font-size: 46px; text-align: center; margin: 4px 0 8px; }
+.footnote { text-align: center; font-size: 12px; color: var(--ink-soft); margin-top: 20px; }
+
+.topbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.topbar h2 { margin: 0; font-size: 22px; }
+.back { width: 44px; height: 44px; border-radius: 50%; background: var(--card); font-size: 28px; line-height: 1; box-shadow: 0 4px 0 rgba(74, 64, 99, .08); }
+
+/* 遊戲畫面 */
+.hud { display: flex; align-items: center; gap: 10px; padding: calc(8px + env(safe-area-inset-top)) 12px 6px; font-weight: 800; }
+.hearts { color: var(--pink-deep); font-size: 20px; letter-spacing: 1px; min-width: 96px; }
+.hearts s { color: #e3dcea; text-decoration: none; }
+.progress { flex: 1; text-align: center; color: var(--ink-soft); font-size: 14px; }
+.progress.boss { color: #a25cf0; }
+.score { min-width: 60px; text-align: right; font-variant-numeric: tabular-nums; }
+.pause-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--card); font-size: 14px; box-shadow: 0 3px 0 rgba(74, 64, 99, .1); }
+
+.prompt {
+  margin: 0 12px 8px; height: 96px; border-radius: 20px; background: var(--card);
+  box-shadow: 0 5px 0 rgba(74, 64, 99, .08); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; padding: 6px 10px;
+  border: 3px solid transparent; transition: background .15s, border-color .15s;
+}
+.prompt-hint { font-size: 12px; color: var(--ink-soft); font-weight: 700; }
+.prompt-text { font-size: 40px; font-weight: 800; line-height: 1.2; }
+.prompt-text.mid { font-size: 28px; }
+.prompt-text.small { font-size: 21px; }
+.prompt.ok { background: #e9fbef; border-color: var(--mint); }
+.prompt.bad { background: #fff0f3; border-color: var(--pink); }
+.prompt.listen { cursor: pointer; }
+.speaker { width: 44px; height: 44px; vertical-align: middle; }
+
+.canvas-wrap { flex: 1; min-height: 0; position: relative; margin: 0 12px calc(12px + env(safe-area-inset-bottom)); border-radius: 24px; overflow: hidden; box-shadow: 0 6px 0 rgba(74, 64, 99, .1); }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+
+.overlay { position: absolute; inset: 0; background: rgba(74, 64, 99, .45); display: grid; place-items: center; }
+.overlay.hidden { display: none; }
+.overlay-card { background: var(--card); border-radius: 24px; padding: 20px; width: 240px; display: grid; gap: 10px; text-align: center; }
+.overlay-card h3 { margin: 0 0 4px; font-size: 22px; }
+
+.btn { padding: 13px 16px; border-radius: 16px; font-weight: 800; background: #f4eef8; box-shadow: 0 5px 0 rgba(74, 64, 99, .12); transition: transform .08s, box-shadow .08s; }
+.btn.primary { background: var(--pink); color: #fff; box-shadow: 0 5px 0 var(--pink-deep); }
+
+/* 結算畫面 */
+.result-card { background: var(--card); border-radius: 26px; padding: 22px 18px; margin-top: 18px; box-shadow: 0 6px 0 rgba(74, 64, 99, .08); }
+.result-card h2 { text-align: center; margin: 0; font-size: 30px; color: var(--pink-deep); }
+.result-score { text-align: center; font-size: 16px; color: var(--ink-soft); }
+.result-score b { font-size: 26px; color: var(--ink); margin: 0 6px; }
+#missWrap h3 { font-size: 15px; margin: 20px 0 8px; }
+.miss-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.miss-list li { display: flex; align-items: baseline; gap: 10px; background: #fff6f8; border-radius: 12px; padding: 8px 12px; }
+.miss-list .mj { font-family: var(--jp); font-weight: 800; font-size: 20px; }
+.miss-list .mk { font-family: var(--jp); color: var(--ink-soft); font-size: 13px; }
+.miss-list .mz { margin-left: auto; font-weight: 700; }
+.miss-list button { align-self: center; width: 30px; height: 30px; border-radius: 50%; background: #fff; flex: none; padding: 5px; }
+.miss-list button svg { width: 100%; height: 100%; display: block; }
+.result-actions { display: grid; gap: 10px; margin-top: 22px; }
+.hidden { display: none !important; }

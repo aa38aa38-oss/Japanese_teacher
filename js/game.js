@@ -15,14 +15,14 @@
   const FRUIT_R = 48;
   const PENALTY = 50; // 切錯扣的分數
   const bossImg = new Image();
-  bossImg.src = 'assets/boss.png?v=4';
+  bossImg.src = 'assets/boss.png?v=5';
   const JP_FONT = '"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP","Noto Sans CJK JP","Meiryo",sans-serif';
   const ZH_FONT = '"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif';
   const SPEAKER_SVG = '<svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
 
   // ---------- 存檔 ----------
   const SAVE_KEY = 'jt-save-v1';
-  const save = { settings: { speed: 'normal', listening: false, sound: true, skipIntro: false }, progress: {}, notebook: [] };
+  const save = { settings: { speed: 'normal', listening: false, sound: true, skipIntro: false, noKanji: false }, progress: {}, notebook: [] };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s) { Object.assign(save.settings, s.settings); Object.assign(save.progress, s.progress); if (Array.isArray(s.notebook)) save.notebook = s.notebook.filter((it) => it && it.k && (it.r || it.z)); }
@@ -151,6 +151,7 @@
     document.querySelectorAll('#speedSeg button').forEach((b) => b.classList.toggle('on', b.dataset.speed === st.speed));
     document.querySelectorAll('#soundSeg button').forEach((b) => b.classList.toggle('on', (b.dataset.sound === 'on') === st.sound));
     $('#soundNote').textContent = st.sound ? '音效與日語發音' : '不會發出任何聲音';
+    $('#kanjiToggle').setAttribute('aria-pressed', String(!!st.noKanji));
     const lt = $('#listenToggle');
     const avail = listeningAvailable();
     lt.disabled = !avail || !st.sound;
@@ -197,7 +198,8 @@
     j2z: '是什麼意思？', z2j: '日文怎麼說？', k2y: '這個漢字怎麼唸？',
   };
 
-  function buildQuestion(item, pool, n, listening) {
+  // noKanji：題目是中文時，選項只顯示假名，避免靠漢字猜出答案
+  function buildQuestion(item, pool, n, listening, noKanji) {
     const isKana = !!item.r;
     let kind;
     if (listening && Math.random() < 0.3) kind = 'listen';
@@ -207,7 +209,7 @@
     const opt = (it) => {
       if (isKana) return kind === 'listen' ? { main: it.k, ja: true } : { main: it.r };
       if (kind === 'j2z' || kind === 'listen') return { main: it.z };
-      if (kind === 'z2j') return { main: it.j || it.k, ruby: it.j ? it.k : '', ja: true };
+      if (kind === 'z2j' && !noKanji) return { main: it.j || it.k, ruby: it.j ? it.k : '', ja: true };
       return { main: it.k, ja: true };
     };
     // 判斷兩個選項是否會讓人分不出來（例如聽力題的 を 與 お 發音相同）
@@ -326,7 +328,7 @@
     // 錯誤選項從同類型的字裡挑；筆記本特訓時字可能不夠，改從整個題庫補
     const same = (it) => !!it.r === !!item.r;
     const pool = (g.spec.notebook ? g.stage.items.concat(ALL_ITEMS) : g.stage.items).filter(same);
-    const q = buildQuestion(item, pool, LANES, g.listening);
+    const q = buildQuestion(item, pool, LANES, g.listening, save.settings.noKanji);
     const boss = g.phase === 'boss';
     const top = boss ? 218 : 118; // 魔王戰時水果飛得比較低，不擋到魔王
     const order = shuffle([0, 1, 2]);
@@ -790,6 +792,7 @@
     save.settings.listening = !save.settings.listening; persist(); refreshSettings();
     if (save.settings.listening) say('こんにちは');
   });
+  $('#kanjiToggle').addEventListener('click', () => { save.settings.noKanji = !save.settings.noKanji; persist(); refreshSettings(); });
   $('#soundSeg').addEventListener('click', (e) => {
     const b = e.target.closest('[data-sound]'); if (!b) return;
     save.settings.sound = b.dataset.sound === 'on'; persist(); refreshSettings();

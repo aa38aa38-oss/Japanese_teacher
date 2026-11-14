@@ -153,3 +153,18 @@ canvas { cursor: crosshair; display: block; width: 100%; height: 100%; touch-act
 .notebook-card .card-side { font-size: 26px; }
 .result-actions { display: grid; gap: 10px; margin-top: 22px; }
 .hidden { display: none !important; }
+
+/* 玩法說明 */
+.intro-card { width: 280px; }
+.intro-card p { margin: 0; line-height: 1.6; }
+.intro-card b { color: var(--pink-deep); }
+.intro-small { font-size: 13px; color: var(--ink-soft); }
+.intro-never { font-size: 13px; color: var(--ink-soft); text-decoration: underline; padding: 6px; }
+.intro-demo { position: relative; height: 96px; display: flex; align-items: center; justify-content: space-between; padding: 0 6px; background: linear-gradient(180deg, #d9efff, #ffe9f1); border-radius: 16px; overflow: hidden; }
+.demo-fruit { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 14px; color: var(--ink); border: 3px solid; }
+.demo-fruit.bad { background: #ffe066; border-color: #f5c211; color: rgba(74, 64, 99, .45); font-size: 20px; }
+.demo-fruit.good { background: #ff8f8f; border-color: #e64980; color: #fff; }
+.demo-slash { position: absolute; left: 50%; top: 50%; width: 110px; height: 6px; margin: -3px 0 0 -55px; border-radius: 3px; background: #fff; box-shadow: 0 0 0 4px rgba(247, 106, 140, .35); transform: rotate(-28deg) scaleX(0); transform-origin: left center; animation: demo-slash 1.8s ease-in-out infinite; }
+.demo-finger { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: rgba(74, 64, 99, .55); border: 3px solid #fff; animation: demo-finger 1.8s ease-in-out infinite; }
+@keyframes demo-slash { 0%, 15% { transform: rotate(-28deg) scaleX(0); opacity: 1; } 55% { transform: rotate(-28deg) scaleX(1); opacity: 1; } 80%, 100% { transform: rotate(-28deg) scaleX(1); opacity: 0; } }
+@keyframes demo-finger { 0%, 15% { transform: translate(-50px, 27px); opacity: 1; } 55% { transform: translate(50px, -27px); opacity: 1; } 80%, 100% { transform: translate(50px, -27px); opacity: 0; } }

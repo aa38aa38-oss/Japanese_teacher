@@ -15,14 +15,14 @@
   const FRUIT_R = 48;
   const PENALTY = 50; // 切錯扣的分數
   const bossImg = new Image();
-  bossImg.src = 'assets/boss.png?v=3';
+  bossImg.src = 'assets/boss.png?v=4';
   const JP_FONT = '"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP","Noto Sans CJK JP","Meiryo",sans-serif';
   const ZH_FONT = '"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif';
   const SPEAKER_SVG = '<svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
 
   // ---------- 存檔 ----------
   const SAVE_KEY = 'jt-save-v1';
-  const save = { settings: { speed: 'normal', listening: false, sound: true }, progress: {}, notebook: [] };
+  const save = { settings: { speed: 'normal', listening: false, sound: true, skipIntro: false }, progress: {}, notebook: [] };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s) { Object.assign(save.settings, s.settings); Object.assign(save.progress, s.progress); if (Array.isArray(s.notebook)) save.notebook = s.notebook.filter((it) => it && it.k && (it.r || it.z)); }
@@ -281,7 +281,9 @@
       banner: { text: stage.name, t: 1.3 },
       clouds: Array.from({ length: 6 }, (_, i) => ({ x: Math.random() * W, y: i * 120 - 60, s: 0.6 + Math.random() * 0.7, v: 18 + Math.random() * 16 })),
       time: 0, paused: false, over: false,
+      intro: !save.settings.skipIntro, // 開始前先顯示玩法說明
     };
+    $('#introOverlay').classList.toggle('hidden', !g.intro);
     $('#pauseOverlay').classList.add('hidden');
     setPrompt(null);
     updateHud();
@@ -671,6 +673,14 @@
     if (w && w.state === 'in' && 1 - w.t / w.dur < 0.3) { // 時間快到時畫面閃紅
       ctx.fillStyle = `rgba(247,106,140,${0.25 * (0.5 + 0.5 * Math.sin(g.time * 14))})`; ctx.fillRect(0, 0, W, H);
     }
+    if (w && w.state === 'in') { // 大大的倒數秒數，淡淡地印在背景裡
+      const left = Math.max(0, w.dur - w.t); const urgent = left <= 3;
+      const pulse = urgent ? 1 + 0.08 * Math.abs(Math.sin(g.time * 6)) : 1;
+      ctx.font = `800 ${Math.round(230 * pulse)}px ${ZH_FONT}`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = urgent ? 'rgba(240,62,110,.42)' : 'rgba(74,64,99,.17)';
+      ctx.fillText(String(Math.ceil(left)), W / 2, H * 0.62);
+    }
     if (g.phase === 'boss' && !(g.bossHp <= 0 && g.bossHurt <= 0)) drawBoss();
     for (const h of g.halves) drawHalf(h);
     if (w) for (const f of w.fruits) if (f.state !== 'gone' && f.y < H + FRUIT_R + 20) drawFruit(f);
@@ -721,7 +731,7 @@
   let raf = 0; let last = 0;
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (!g.paused) update(dt);
+    if (!g.paused && !g.intro) update(dt);
     if (g.over) return;
     draw();
     updateTimer();
@@ -729,7 +739,7 @@
   }
 
   function setPaused(p) {
-    if (!g || g.over) return;
+    if (!g || g.over || g.intro) return;
     g.paused = p;
     if (p && synth) synth.cancel();
     $('#pauseOverlay').classList.toggle('hidden', !p);
@@ -739,7 +749,7 @@
   const toPt = (e) => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.width * W }; };
   let blade = null; // 手指或滑鼠按著時的上一個位置
   canvas.addEventListener('pointerdown', (e) => {
-    if (!g || g.paused || g.over) return;
+    if (!g || g.paused || g.over || g.intro) return;
     blade = toPt(e);
     g.trail.push({ ...blade, life: 0.22, start: true });
     trySlice(blade.x, blade.y, blade.x, blade.y);
@@ -760,7 +770,7 @@
   window.addEventListener('keydown', (e) => {
     if (!g || g.over || !$('#game').classList.contains('active')) return;
     if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') { setPaused(!g.paused); return; }
-    if (g.paused) return;
+    if (g.paused || g.intro) return;
     const w = g.wave;
     if (/^[1-3]$/.test(e.key)) {
       const f = w && w.state === 'in' && w.fruits[+e.key - 1];
@@ -788,6 +798,14 @@
   $('#levelList').addEventListener('click', (e) => { const b = e.target.closest('[data-level]'); if (b) renderStages(+b.dataset.level); });
   $('#stageList').addEventListener('click', (e) => { const b = e.target.closest('[data-stage]'); if (b) startGame({ li: curLevel, si: +b.dataset.stage }); });
   $('#stagesBack').addEventListener('click', () => { renderHome(); show('home'); });
+  const closeIntro = (never) => {
+    if (never) { save.settings.skipIntro = true; persist(); }
+    g.intro = false; last = performance.now();
+    $('#introOverlay').classList.add('hidden');
+    sfx('ok'); // 順便在使用者點擊時啟用音效
+  };
+  $('#introStart').addEventListener('click', () => closeIntro(false));
+  $('#introNever').addEventListener('click', () => closeIntro(true));
   $('#pauseBtn').addEventListener('click', () => setPaused(true));
   $('#resumeBtn').addEventListener('click', () => { setPaused(false); last = performance.now(); });
   $('#restartBtn').addEventListener('click', () => startGame(g.spec));

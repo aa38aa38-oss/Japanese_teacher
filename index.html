@@ -38,6 +38,12 @@
 
     <h2 class="section-title">選擇等級</h2>
     <div id="levelList" class="level-list"></div>
+    <h2 class="section-title">客製化特訓</h2>
+    <button class="level-card notebook-card" id="notebookCard">
+      <span class="level-icon" lang="ja">記</span>
+      <span class="card-main"><div class="card-name">我的筆記本</div><div class="card-desc" id="notebookDesc"></div></span>
+      <span class="card-side">›</span>
+    </button>
     <p class="footnote">進度只會存在你的瀏覽器裡，不需要帳號。</p>
   </section>
 
@@ -49,6 +55,18 @@
     <div id="stageList" class="stage-list"></div>
   </section>
 
+  <section id="notebook" class="screen">
+    <div class="topbar">
+      <button class="back" id="notebookBack" aria-label="返回">‹</button>
+      <h2>我的筆記本</h2>
+      <span class="topbar-side" id="notebookCount"></span>
+    </div>
+    <button class="btn primary wide" id="notebookPlay">用筆記本玩一局</button>
+    <p class="list-note center" id="notebookHint"></p>
+    <p class="empty" id="notebookEmpty">筆記本還是空的。<br>玩完一局後，在結算畫面把想記的字按「＋筆記」加進來。</p>
+    <ul id="notebookList" class="word-list"></ul>
+  </section>
+
   <section id="game" class="screen">
     <div class="hud">
       <div id="hearts" class="hearts"></div>
@@ -57,6 +75,8 @@
       <button id="pauseBtn" class="pause-btn" aria-label="暫停">Ⅱ</button>
     </div>
     <div id="promptBox" class="prompt">
+      <div id="timer" class="timer hidden"><span id="timerNum"></span><small>秒</small></div>
+      <div class="timer-track"><i id="timerBar"></i></div>
       <div id="promptHint" class="prompt-hint"></div>
       <div id="promptText" class="prompt-text"></div>
     </div>
@@ -78,9 +98,11 @@
       <h2 id="resultTitle"></h2>
       <div id="resultStars" class="stars big"></div>
       <div class="result-score">分數 <b id="resultScore">0</b><span id="resultBest"></span></div>
-      <div id="missWrap">
-        <h3 id="missTitle">需要再複習的字</h3>
-        <ul id="missList" class="miss-list"></ul>
+      <div id="roundWrap">
+        <h3>本局題目</h3>
+        <p class="list-note">把想記的字加入筆記本，之後可以用筆記本再玩一局。</p>
+        <button class="btn mini" id="addMissedBtn"></button>
+        <ul id="roundList" class="word-list"></ul>
       </div>
       <div class="result-actions">
         <button class="btn primary" id="nextBtn">下一關</button>

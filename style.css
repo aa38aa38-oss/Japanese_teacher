@@ -93,7 +93,16 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   box-shadow: 0 5px 0 rgba(74, 64, 99, .08); display: flex; flex-direction: column;
   align-items: center; justify-content: center; text-align: center; padding: 6px 10px;
   border: 3px solid transparent; transition: background .15s, border-color .15s;
+  position: relative; overflow: hidden;
 }
+.timer { position: absolute; top: 8px; right: 10px; min-width: 46px; padding: 3px 8px; border-radius: 999px; background: #f4eef8; font-weight: 800; font-variant-numeric: tabular-nums; }
+.timer span { font-size: 20px; }
+.timer small { font-size: 11px; margin-left: 2px; color: var(--ink-soft); }
+.timer.urgent { background: var(--pink-deep); color: #fff; }
+.timer.urgent small { color: #fff; }
+.timer-track { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: #f4eef8; }
+.timer-track i { display: block; height: 100%; width: 0; background: var(--mint); border-radius: 0 3px 3px 0; }
+.timer-track i.urgent { background: var(--pink-deep); }
 .prompt-hint { font-size: 12px; color: var(--ink-soft); font-weight: 700; }
 .prompt-text { font-size: 40px; font-weight: 800; line-height: 1.2; }
 .prompt-text.mid { font-size: 28px; }
@@ -119,13 +128,28 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; user-sel
 .result-card h2 { text-align: center; margin: 0; font-size: 30px; color: var(--pink-deep); }
 .result-score { text-align: center; font-size: 16px; color: var(--ink-soft); }
 .result-score b { font-size: 26px; color: var(--ink); margin: 0 6px; }
-#missWrap h3 { font-size: 15px; margin: 20px 0 8px; }
-.miss-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
-.miss-list li { display: flex; align-items: baseline; gap: 10px; background: #fff6f8; border-radius: 12px; padding: 8px 12px; }
-.miss-list .mj { font-family: var(--jp); font-weight: 800; font-size: 20px; }
-.miss-list .mk { font-family: var(--jp); color: var(--ink-soft); font-size: 13px; }
-.miss-list .mz { margin-left: auto; font-weight: 700; }
-.miss-list button { align-self: center; width: 30px; height: 30px; border-radius: 50%; background: #fff; flex: none; padding: 5px; }
-.miss-list button svg { width: 100%; height: 100%; display: block; }
+#roundWrap h3 { font-size: 16px; margin: 20px 0 2px; }
+.list-note { font-size: 12px; color: var(--ink-soft); margin: 2px 0 10px; }
+.list-note.center { text-align: center; margin-top: 10px; }
+.btn.mini { width: 100%; padding: 9px 12px; font-size: 14px; margin-bottom: 10px; background: #fff0f3; color: var(--pink-deep); box-shadow: 0 4px 0 rgba(247, 106, 140, .2); }
+.btn.wide { width: 100%; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.word-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.word-list li { display: flex; align-items: center; gap: 8px; background: #f8f5fb; border-radius: 14px; padding: 8px 8px 8px 12px; min-height: 48px; }
+#notebook .word-list li { background: var(--card); box-shadow: 0 3px 0 rgba(74, 64, 99, .06); }
+.word-list li.miss { background: #fff0f3; }
+.word-list .mark { flex: none; width: 18px; font-weight: 800; color: #4fc37a; text-align: center; }
+.word-list li.miss .mark { color: var(--pink-deep); }
+.word-list .mj { font-family: var(--jp); font-weight: 800; font-size: 19px; }
+.word-list .mk { font-family: var(--jp); color: var(--ink-soft); font-size: 12px; }
+.word-list .mz { margin-left: auto; font-weight: 700; font-size: 14px; text-align: right; }
+.word-list .say-btn { width: 30px; height: 30px; border-radius: 50%; background: #fff; flex: none; padding: 5px; }
+.word-list .say-btn svg { width: 100%; height: 100%; display: block; }
+.nb-btn { flex: none; min-width: 62px; padding: 7px 8px; border-radius: 999px; font-size: 13px; font-weight: 800; background: #fff; color: var(--pink-deep); border: 2px solid var(--pink); }
+.nb-btn.on { background: var(--mint); border-color: var(--mint); color: #fff; }
+.empty { text-align: center; color: var(--ink-soft); line-height: 1.8; margin: 28px 0; }
+.topbar-side { margin-left: auto; color: var(--ink-soft); font-weight: 700; font-size: 14px; }
+.notebook-card .level-icon { background: #f7a072; }
+.notebook-card .card-side { font-size: 26px; }
 .result-actions { display: grid; gap: 10px; margin-top: 22px; }
 .hidden { display: none !important; }

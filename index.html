@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#bfe3ff">
   <title>日語水果道場｜邊玩邊學日文</title>
   <meta name="description" content="可愛的日語學習切水果遊戲：劃過帶著正確答案的水果，從五十音一路學到基礎與中等單字。">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <div id="app">
@@ -85,6 +85,22 @@
     </div>
     <div class="canvas-wrap">
       <canvas id="canvas"></canvas>
+      <div id="introOverlay" class="overlay hidden">
+        <div class="overlay-card intro-card">
+          <h3>滑動畫面砍水果</h3>
+          <div class="intro-demo" aria-hidden="true">
+            <span class="demo-fruit bad">×</span>
+            <span class="demo-fruit good">答案</span>
+            <span class="demo-fruit bad">×</span>
+            <i class="demo-slash"></i>
+            <i class="demo-finger"></i>
+          </div>
+          <p>每題會飛出三顆水果。<br>用手指<b>滑過</b>正確答案的那一顆！</p>
+          <p class="intro-small">砍對得分，砍錯會爆炸扣分。<br>要在倒數結束前出手。</p>
+          <button class="btn primary" id="introStart">開始</button>
+          <button class="intro-never" id="introNever">開始，以後不再顯示說明</button>
+        </div>
+      </div>
       <div id="pauseOverlay" class="overlay hidden">
         <div class="overlay-card">
           <h3>暫停中</h3>
@@ -116,7 +132,7 @@
   </section>
 
 </div>
-<script src="js/data.js?v=3"></script>
-<script src="js/game.js?v=3"></script>
+<script src="js/data.js?v=4"></script>
+<script src="js/game.js?v=4"></script>
 </body>
 </html>

@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#bfe3ff">
-  <title>日語小飛機｜邊玩邊學日文</title>
-  <meta name="description" content="可愛的日語學習射擊遊戲：把飛機移到正確答案下方發射，從五十音一路學到基礎與中等單字。">
+  <title>日語水果道場｜邊玩邊學日文</title>
+  <meta name="description" content="可愛的日語學習切水果遊戲：劃過帶著正確答案的水果，從五十音一路學到基礎與中等單字。">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,11 +13,18 @@
 
   <section id="home" class="screen active">
     <header class="title">
-      <h1>日語小飛機</h1>
-      <p lang="ja">にほんご・フライト</p>
+      <h1>日語水果道場</h1>
+      <p lang="ja">にほんご・フルーツどうじょう</p>
     </header>
 
     <div class="panel">
+      <div class="setting">
+        <span class="setting-label">聲音<small id="soundNote"></small></span>
+        <div class="seg" id="soundSeg">
+          <button data-sound="on">有聲音</button>
+          <button data-sound="off">靜音</button>
+        </div>
+      </div>
       <div class="setting">
         <span class="setting-label">速度</span>
         <div class="seg" id="speedSeg">
@@ -29,10 +36,6 @@
       <div class="setting">
         <span class="setting-label">聽力測驗<small id="listenNote">混入「聽發音選答案」的題目</small></span>
         <button class="toggle" id="listenToggle" aria-pressed="false"><i></i></button>
-      </div>
-      <div class="setting">
-        <span class="setting-label">音效與發音<small>答題後唸出讀音</small></span>
-        <button class="toggle" id="soundToggle" aria-pressed="true"><i></i></button>
       </div>
     </div>
 

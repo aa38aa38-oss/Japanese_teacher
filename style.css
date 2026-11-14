@@ -28,7 +28,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 
 /* 首頁 */
 .title { text-align: center; padding: 18px 0 14px; }
-.title h1 { margin: 0; font-size: 38px; letter-spacing: 2px; color: var(--pink-deep); text-shadow: 0 3px 0 #fff, 0 6px 0 rgba(247, 106, 140, .18); }
+.title h1 { margin: 0; font-size: 36px; letter-spacing: 2px; color: var(--pink-deep); text-shadow: 0 3px 0 #fff, 0 6px 0 rgba(247, 106, 140, .18); }
 .title p { margin: 6px 0 0; color: var(--ink-soft); font-weight: 700; letter-spacing: 3px; }
 
 .panel { background: var(--card); border-radius: 22px; padding: 6px 16px; box-shadow: 0 6px 0 rgba(74, 64, 99, .08); }
@@ -113,7 +113,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .speaker { width: 44px; height: 44px; vertical-align: middle; }
 
 .canvas-wrap { flex: 1; min-height: 0; position: relative; margin: 0 12px calc(12px + env(safe-area-inset-bottom)); border-radius: 24px; overflow: hidden; box-shadow: 0 6px 0 rgba(74, 64, 99, .1); }
-canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+canvas { cursor: crosshair; display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
 
 .overlay { position: absolute; inset: 0; background: rgba(74, 64, 99, .45); display: grid; place-items: center; }
 .overlay.hidden { display: none; }

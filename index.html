@@ -6,16 +6,37 @@
   <meta name="theme-color" content="#bfe3ff">
   <title>日語水果道場｜邊玩邊學日文</title>
   <meta name="description" content="可愛的日語學習切水果遊戲：劃過帶著正確答案的水果，從五十音一路學到基礎與中等單字。">
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 <div id="app">
 
-  <section id="home" class="screen active">
+  <section id="pick" class="screen active">
     <header class="title">
       <h1>日語水果道場</h1>
       <p lang="ja">にほんご・フルーツどうじょう</p>
     </header>
+    <h2 class="section-title">選擇你的忍者</h2>
+    <div class="panel ninja-panel">
+      <div class="lv-row"><b id="lvLabel"></b><span id="xpLabel"></span></div>
+      <div class="xp-track"><i id="xpBar"></i></div>
+      <div id="skinList" class="skin-list"></div>
+      <p class="list-note">每局的得分會累積，升級後解鎖新造型。</p>
+    </div>
+    <div class="pick-bar">
+      <button class="btn primary wide" id="pickStart"></button>
+    </div>
+  </section>
+
+  <section id="home" class="screen">
+    <div class="topbar">
+      <button class="back" id="homeBack" aria-label="返回選擇忍者">‹</button>
+      <h2>遊戲選單</h2>
+      <button class="ninja-chip" id="ninjaChip" aria-label="重選忍者">
+        <canvas id="chipThumb"></canvas>
+        <span><b id="chipName"></b><small>重選忍者</small></span>
+      </button>
+    </div>
 
     <div class="panel">
       <div class="setting">
@@ -41,14 +62,6 @@
         <span class="setting-label">避免漢字提示<small>題目是中文時，答案只顯示假名，不會同時出現漢字</small></span>
         <button class="toggle" id="kanjiToggle" aria-pressed="false"><i></i></button>
       </div>
-    </div>
-
-    <h2 class="section-title">選擇忍者</h2>
-    <div class="panel ninja-panel">
-      <div class="lv-row"><b id="lvLabel"></b><span id="xpLabel"></span></div>
-      <div class="xp-track"><i id="xpBar"></i></div>
-      <div id="skinList" class="skin-list"></div>
-      <p class="list-note">每局的得分會累積，升級後解鎖新造型。</p>
     </div>
 
     <h2 class="section-title">選擇等級</h2>
@@ -149,7 +162,7 @@
   </section>
 
 </div>
-<script src="js/data.js?v=8"></script>
-<script src="js/game.js?v=8"></script>
+<script src="js/data.js?v=9"></script>
+<script src="js/game.js?v=9"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#bfe3ff">
   <title>日語水果道場｜邊玩邊學日文</title>
   <meta name="description" content="可愛的日語學習切水果遊戲：劃過帶著正確答案的水果，從五十音一路學到基礎與中等單字。">
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 <div id="app">
@@ -161,8 +161,26 @@
     </div>
   </section>
 
+  <div id="unlock" class="unlock hidden">
+    <div class="unlock-rays" aria-hidden="true"></div>
+    <div class="unlock-flash" aria-hidden="true"></div>
+    <div class="unlock-stage">
+      <div class="unlock-lv" id="unlockLv"></div>
+      <div class="unlock-art">
+        <i class="spark s1"></i><i class="spark s2"></i><i class="spark s3"></i><i class="spark s4"></i><i class="spark s5"></i><i class="spark s6"></i>
+        <canvas id="unlockArt"></canvas>
+      </div>
+      <div class="unlock-name" id="unlockName"></div>
+      <div class="unlock-ask">
+        <p id="unlockAsk"></p>
+        <button class="btn primary" id="unlockWear"></button>
+        <button class="btn" id="unlockSkip">先不用</button>
+      </div>
+    </div>
+  </div>
+
 </div>
-<script src="js/data.js?v=9"></script>
-<script src="js/game.js?v=9"></script>
+<script src="js/data.js?v=10"></script>
+<script src="js/game.js?v=10"></script>
 </body>
 </html>

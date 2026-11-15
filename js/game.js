@@ -15,7 +15,7 @@
   const FRUIT_R = 48;
   const PENALTY = 50; // 切錯扣的分數
   const bossImg = new Image();
-  bossImg.src = 'assets/boss.png?v=9';
+  bossImg.src = 'assets/boss.png?v=10';
   const JP_FONT = '"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP","Noto Sans CJK JP","Meiryo",sans-serif';
   const ZH_FONT = '"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif';
   const SPEAKER_SVG = '<svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
@@ -119,7 +119,7 @@
   const sheetImgs = {};
   function skinSheet(skin) {
     if (skin.sheet) { // 有自己動作圖的造型，用到時才下載
-      if (!sheetImgs[skin.id]) { sheetImgs[skin.id] = new Image(); sheetImgs[skin.id].src = `assets/skins/${skin.id}.webp?v=9`; }
+      if (!sheetImgs[skin.id]) { sheetImgs[skin.id] = new Image(); sheetImgs[skin.id].src = `assets/skins/${skin.id}.webp?v=10`; }
       return sheetImgs[skin.id].naturalWidth ? sheetImgs[skin.id] : null;
     }
     if (!ninjaImg.naturalWidth) return null;
@@ -167,8 +167,45 @@
     if ($('#pick').classList.contains('active')) renderSkins();
     else if ($('#home').classList.contains('active')) renderChip();
   };
-  ninjaImg.src = 'assets/ninja.png?v=9';
-  thumbsImg.src = 'assets/skins/thumbs.webp?v=9';
+  ninjaImg.src = 'assets/ninja.png?v=10';
+  thumbsImg.src = 'assets/skins/thumbs.webp?v=10';
+
+  // ---------- 新角色出場特寫 ----------
+  let unlockTimer = 0;
+  function showUnlock(queue, onWear) {
+    const skin = queue.shift();
+    const box = $('#unlock'); const c = $('#unlockArt');
+    $('#unlockLv').textContent = `Lv.${skin.lv} 解鎖新角色`;
+    $('#unlockName').textContent = skin.name;
+    $('#unlockAsk').textContent = `要換成「${skin.name}」嗎？`;
+    $('#unlockWear').textContent = `換上「${skin.name}」`;
+    // 特寫用勝利姿勢；動作圖還沒下載完時先用小圖，下載好再換上
+    const ctx2 = c.getContext('2d');
+    const paint = () => {
+      const sheet = skinSheet(skin);
+      if (sheet) {
+        c.width = NINJA.cw; c.height = NINJA.ch;
+        ctx2.drawImage(sheet, (NINJA.win % 5) * NINJA.cw, Math.floor(NINJA.win / 5) * NINJA.ch, NINJA.cw, NINJA.ch, 0, 0, NINJA.cw, NINJA.ch);
+        return true;
+      }
+      paintThumb(c, skin);
+      return false;
+    };
+    clearInterval(unlockTimer);
+    if (!paint()) unlockTimer = setInterval(() => { if (paint()) clearInterval(unlockTimer); }, 150);
+    // 重新觸發進場動畫
+    box.classList.remove('hidden', 'play');
+    void box.offsetWidth;
+    box.classList.add('play');
+    sfx('unlock');
+    const close = (wear) => {
+      clearInterval(unlockTimer);
+      if (wear) { save.settings.skin = skin.id; persist(); onWear(); }
+      if (queue.length) showUnlock(queue, onWear); else box.classList.add('hidden');
+    };
+    $('#unlockWear').onclick = () => close(true);
+    $('#unlockSkip').onclick = () => close(false);
+  }
 
   // ---------- 筆記本 ----------
   const itemKey = (it) => (it.r ? `k:${it.k}` : `w:${it.j}|${it.k}`);
@@ -265,6 +302,7 @@
       else if (name === 'ok') { tone(660, 0, 0.1, 'triangle', 0.12); tone(990, 0.09, 0.16, 'triangle', 0.12); }
       else if (name === 'bad') { tone(200, 0, 0.25, 'sawtooth', 0.08); tone(150, 0.12, 0.25, 'sawtooth', 0.08); }
       else if (name === 'boss') { tone(220, 0, 0.2, 'square', 0.06); tone(196, 0.2, 0.2, 'square', 0.06); tone(175, 0.4, 0.35, 'square', 0.06); }
+      else if (name === 'unlock') [392, 523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.75 + i * 0.09, i === 5 ? 0.6 : 0.2, 'triangle', 0.13));
       else if (name === 'clear') [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.12, 0.25, 'triangle', 0.12));
       else if (name === 'over') [392, 330, 262].forEach((f, i) => tone(f, i * 0.2, 0.35, 'triangle', 0.1));
     } catch (e) { /* 忽略 */ }
@@ -649,7 +687,10 @@
       $('#levelUp').innerHTML = `<canvas id="levelUpThumb"></canvas><div><b>升級到 Lv.${info.lv}！</b><span>獲得新造型「${gained.map((k) => k.name).join('」「')}」</span>`
         + `<button class="btn mini" id="wearBtn">換上「${newest.name}」</button></div>`;
       paintThumb($('#levelUpThumb'), newest);
-      $('#wearBtn').onclick = () => { save.settings.skin = newest.id; persist(); $('#wearBtn').textContent = '已換上'; $('#wearBtn').disabled = true; };
+      const markWorn = () => { const w = $('#wearBtn'); if (w) { w.textContent = `已換上「${skinById(save.settings.skin).name}」`; w.disabled = true; } };
+      $('#wearBtn').onclick = () => { save.settings.skin = newest.id; persist(); markWorn(); };
+      // 先播放新角色的出場特寫，再問要不要換上
+      if (gained.length) setTimeout(() => showUnlock(gained.slice(), markWorn), 700);
     }
 
     $('#resultTitle').textContent = win ? '過關！' : '再挑戰一次吧';

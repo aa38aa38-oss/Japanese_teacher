@@ -15,7 +15,7 @@
   const FRUIT_R = 48;
   const PENALTY = 50; // 切錯扣的分數
   const bossImg = new Image();
-  bossImg.src = 'assets/boss.png?v=7';
+  bossImg.src = 'assets/boss.png?v=8';
   const JP_FONT = '"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP","Noto Sans CJK JP","Meiryo",sans-serif';
   const ZH_FONT = '"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif';
   const SPEAKER_SVG = '<svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
@@ -42,17 +42,34 @@
 
   // ---------- 忍者造型與等級 ----------
   // sh/ss/sv：圍巾的色相與飽和度、亮度倍率；o：衣服的顏色調整。lv 為解鎖所需等級
+  // sheet: true 的造型有自己的動作圖（assets/skins/<id>.webp），其餘由忍者圖換色而來
   const SKINS = [
     { id: 'red', name: '紅蓮', lv: 1 },
     { id: 'blue', name: '蒼嵐', lv: 1, sh: 215 },
     { id: 'green', name: '翠風', lv: 1, sh: 140, sv: 0.9 },
-    { id: 'giraffe', name: '長頸鹿', lv: 2, sheet: 'giraffe' }, // 使用另一張動作圖
-    { id: 'purple', name: '紫電', lv: 3, sh: 280 },
-    { id: 'gold', name: '黃金', lv: 4, sh: 45, ss: 0.9, sv: 1.25 },
-    { id: 'white', name: '白雪', lv: 5, sh: 200, ss: 0.7, sv: 1.2, o: { s: 0.25, va: 0.42, vm: 1.25 } },
-    { id: 'crimson', name: '赤鬼', lv: 6, sh: 48, sv: 1.3, o: { h: 355, s: 0.7, va: 0.12, vm: 1.5 } },
+    { id: 'giraffe', name: '長頸鹿', lv: 2, sheet: true },
+    { id: 'corgi', name: '柯基', lv: 3, sheet: true },
+    { id: 'alpaca', name: '草泥馬', lv: 4, sheet: true },
+    { id: 'purple', name: '紫電', lv: 5, sh: 280 },
+    { id: 'bear', name: '北極熊', lv: 6, sheet: true },
+    { id: 'pink', name: '粉紅女忍', lv: 7, sheet: true },
+    { id: 'gold', name: '黃金', lv: 8, sh: 45, ss: 0.9, sv: 1.25 },
+    { id: 'kunoichi', name: '紫衣女忍', lv: 9, sheet: true },
+    { id: 'rooster', name: '公雞', lv: 10, sheet: true },
+    { id: 'shark', name: '鯊魚', lv: 11, sheet: true },
+    { id: 'white', name: '白雪', lv: 12, sh: 200, ss: 0.7, sv: 1.2, o: { s: 0.25, va: 0.42, vm: 1.25 } },
+    { id: 'elephant', name: '大象', lv: 13, sheet: true },
+    { id: 'leopard', name: '花豹', lv: 14, sheet: true },
+    { id: 'wolf', name: '狼人', lv: 15, sheet: true },
+    { id: 'crimson', name: '赤鬼', lv: 16, sh: 48, sv: 1.3, o: { h: 355, s: 0.7, va: 0.12, vm: 1.5 } },
+    { id: 'bull', name: '蠻牛', lv: 17, sheet: true },
+    { id: 'snake', name: '大蛇', lv: 18, sheet: true },
   ];
-  const LEVEL_XP = [0, 1500, 4000, 8000, 14000, 22000]; // 升到各等級所需的累積分數
+  // 小圖集（assets/skins/thumbs.webp）裡各造型的排列順序
+  const THUMB_ORDER = ['giraffe', 'corgi', 'alpaca', 'bear', 'pink', 'kunoichi', 'rooster', 'shark', 'elephant', 'leopard', 'wolf', 'bull', 'snake'];
+  const MAX_LV = 18;
+  // 升到各等級所需的累積分數：1000、3000、6000、10000……每一級比前一級多 1000
+  const LEVEL_XP = Array.from({ length: MAX_LV }, (_, i) => 500 * i * (i + 1));
   const levelOf = (xp) => { let lv = 1; while (lv < LEVEL_XP.length && xp >= LEVEL_XP[lv]) lv++; return lv; };
   const skinById = (id) => SKINS.find((k) => k.id === id) || SKINS[0];
   const currentSkin = () => { const k = skinById(save.settings.skin); return k.lv <= levelOf(save.xp) ? k : SKINS[0]; };
@@ -65,8 +82,7 @@
   // 忍者圖：5×2 格，依序為 待機、衝刺、跳躍、橫斬、上斬、月牙斬、迴旋斬、落地、架式、勝利
   const NINJA = { cw: 458, ch: 240, idle: 0, jump: 2, slashes: [3, 4, 5, 6], land: 7, guard: 8, win: 9 };
   const ninjaImg = new Image();
-  const giraffeImg = new Image();
-  const sheetImg = (skin) => (skin.sheet === 'giraffe' ? giraffeImg : ninjaImg);
+  const thumbsImg = new Image();
   const skinSheets = {};
   const hsv = (r, g, b) => {
     const mx = Math.max(r, g, b); const d = mx - Math.min(r, g, b);
@@ -100,12 +116,16 @@
       x.putImageData(img, 0, 0);
     } catch (e) { /* 直接開啟檔案時瀏覽器不允許讀取像素，維持原色 */ }
   }
+  const sheetImgs = {};
   function skinSheet(skin) {
-    const img = sheetImg(skin);
-    if (!img.naturalWidth) return null;
+    if (skin.sheet) { // 有自己動作圖的造型，用到時才下載
+      if (!sheetImgs[skin.id]) { sheetImgs[skin.id] = new Image(); sheetImgs[skin.id].src = `assets/skins/${skin.id}.webp?v=8`; }
+      return sheetImgs[skin.id].naturalWidth ? sheetImgs[skin.id] : null;
+    }
+    if (!ninjaImg.naturalWidth) return null;
     if (!skinSheets[skin.id]) {
-      const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
-      c.getContext('2d').drawImage(img, 0, 0);
+      const c = document.createElement('canvas'); c.width = ninjaImg.naturalWidth; c.height = ninjaImg.naturalHeight;
+      c.getContext('2d').drawImage(ninjaImg, 0, 0);
       recolor(c, skin);
       skinSheets[skin.id] = c;
     }
@@ -113,10 +133,13 @@
   }
   // 在小畫布上畫出造型的待機姿勢
   function paintThumb(c, skin) {
-    const img = sheetImg(skin);
-    if (!img.naturalWidth) return;
     c.width = c.height = 144;
-    c.getContext('2d').drawImage(img, 108, 0, 240, 240, 0, 0, 144, 144);
+    if (skin.sheet) {
+      if (thumbsImg.naturalWidth) c.getContext('2d').drawImage(thumbsImg, THUMB_ORDER.indexOf(skin.id) * 144, 0, 144, 144, 0, 0, 144, 144);
+      return;
+    }
+    if (!ninjaImg.naturalWidth) return;
+    c.getContext('2d').drawImage(ninjaImg, 108, 0, 240, 240, 0, 0, 144, 144);
     recolor(c, skin);
   }
   function renderSkins() {
@@ -131,9 +154,9 @@
     }).join('');
     document.querySelectorAll('#skinList [data-thumb]').forEach((c) => paintThumb(c, skinById(c.dataset.thumb)));
   }
-  ninjaImg.onload = giraffeImg.onload = () => { if ($('#home').classList.contains('active')) renderSkins(); };
-  ninjaImg.src = 'assets/ninja.png?v=7';
-  giraffeImg.src = 'assets/giraffe.png?v=7';
+  ninjaImg.onload = thumbsImg.onload = () => { if ($('#home').classList.contains('active')) renderSkins(); };
+  ninjaImg.src = 'assets/ninja.png?v=8';
+  thumbsImg.src = 'assets/skins/thumbs.webp?v=8';
 
   // ---------- 筆記本 ----------
   const itemKey = (it) => (it.r ? `k:${it.k}` : `w:${it.j}|${it.k}`);
@@ -377,6 +400,7 @@
       hp: sp.hp, score: 0, combo: 0, mistakes: 0, shake: 0,
       particles: [], halves: [], blasts: [], floats: [], trail: [], wave: null, waves: 0,
       skin: currentSkin(),
+      skinFallback: SKINS[0], // 造型圖還在下載時先用基本忍者
       ninja: { x: W / 2, y: H - 14, state: 'idle', t: 0, face: 1, frame: NINJA.idle, sx: 0, sy: 0, tx: 0, ty: 0 },
       banner: { text: stage.name, t: 1.3 },
       clouds: Array.from({ length: 6 }, (_, i) => ({ x: Math.random() * W, y: i * 120 - 60, s: 0.6 + Math.random() * 0.7, v: 18 + Math.random() * 16 })),
@@ -814,7 +838,7 @@
   }
 
   function drawNinja() {
-    const n = g.ninja; const sheet = skinSheet(g.skin);
+    const n = g.ninja; const sheet = skinSheet(g.skin) || skinSheet(g.skinFallback);
     const air = n.state === 'fly' || n.state === 'slash' || n.state === 'fall' || n.state === 'hurt';
     const dh = n.state === 'slash' ? 132 : 112; const dw = dh * NINJA.cw / NINJA.ch;
     if (!air) { // 站在地上時的影子

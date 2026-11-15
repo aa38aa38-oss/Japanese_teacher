@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#bfe3ff">
   <title>日語水果道場｜邊玩邊學日文</title>
   <meta name="description" content="可愛的日語學習切水果遊戲：劃過帶著正確答案的水果，從五十音一路學到基礎與中等單字。">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 <div id="app">
@@ -41,6 +41,14 @@
         <span class="setting-label">避免漢字提示<small>題目是中文時，答案只顯示假名，不會同時出現漢字</small></span>
         <button class="toggle" id="kanjiToggle" aria-pressed="false"><i></i></button>
       </div>
+    </div>
+
+    <h2 class="section-title">選擇忍者</h2>
+    <div class="panel ninja-panel">
+      <div class="lv-row"><b id="lvLabel"></b><span id="xpLabel"></span></div>
+      <div class="xp-track"><i id="xpBar"></i></div>
+      <div id="skinList" class="skin-list"></div>
+      <p class="list-note">每局的得分會累積，升級後解鎖新造型。</p>
     </div>
 
     <h2 class="section-title">選擇等級</h2>
@@ -121,6 +129,11 @@
       <h2 id="resultTitle"></h2>
       <div id="resultStars" class="stars big"></div>
       <div class="result-score">分數 <b id="resultScore">0</b><span id="resultBest"></span></div>
+      <div class="xp-box">
+        <div class="lv-row"><b id="resLv"></b><span id="resXp"></span></div>
+        <div class="xp-track"><i id="resXpBar"></i></div>
+        <div id="levelUp" class="level-up hidden"></div>
+      </div>
       <div id="roundWrap">
         <h3>本局題目</h3>
         <p class="list-note">把想記的字加入筆記本，之後可以用筆記本再玩一局。</p>
@@ -136,7 +149,7 @@
   </section>
 
 </div>
-<script src="js/data.js?v=5"></script>
-<script src="js/game.js?v=5"></script>
+<script src="js/data.js?v=6"></script>
+<script src="js/game.js?v=6"></script>
 </body>
 </html>

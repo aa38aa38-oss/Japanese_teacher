@@ -15,17 +15,17 @@
   const FRUIT_R = 48;
   const PENALTY = 50; // 切錯扣的分數
   const bossImg = new Image();
-  bossImg.src = 'assets/boss.png?v=5';
+  bossImg.src = 'assets/boss.png?v=6';
   const JP_FONT = '"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP","Noto Sans CJK JP","Meiryo",sans-serif';
   const ZH_FONT = '"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif';
   const SPEAKER_SVG = '<svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
 
   // ---------- 存檔 ----------
   const SAVE_KEY = 'jt-save-v1';
-  const save = { settings: { speed: 'normal', listening: false, sound: true, skipIntro: false, noKanji: false }, progress: {}, notebook: [] };
+  const save = { settings: { speed: 'normal', listening: false, sound: true, skipIntro: false, noKanji: false, skin: 'red' }, progress: {}, notebook: [], xp: 0 };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s) { Object.assign(save.settings, s.settings); Object.assign(save.progress, s.progress); if (Array.isArray(s.notebook)) save.notebook = s.notebook.filter((it) => it && it.k && (it.r || it.z)); }
+    if (s) { Object.assign(save.settings, s.settings); Object.assign(save.progress, s.progress); if (s.xp > 0) save.xp = Math.floor(s.xp); if (Array.isArray(s.notebook)) save.notebook = s.notebook.filter((it) => it && it.k && (it.r || it.z)); }
   } catch (e) { /* 沒有存檔或無法讀取時使用預設值 */ }
   if (!SPEEDS[save.settings.speed]) save.settings.speed = 'normal';
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* 忽略 */ } };
@@ -39,6 +39,95 @@
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   const starsHtml = (n) => `<b>${'★'.repeat(n)}</b>${'★'.repeat(3 - n)}`;
   const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---------- 忍者造型與等級 ----------
+  // sh/ss/sv：圍巾的色相與飽和度、亮度倍率；o：衣服的顏色調整。lv 為解鎖所需等級
+  const SKINS = [
+    { id: 'red', name: '紅蓮', lv: 1 },
+    { id: 'blue', name: '蒼嵐', lv: 1, sh: 215 },
+    { id: 'green', name: '翠風', lv: 1, sh: 140, sv: 0.9 },
+    { id: 'purple', name: '紫電', lv: 2, sh: 280 },
+    { id: 'gold', name: '黃金', lv: 3, sh: 45, ss: 0.9, sv: 1.25 },
+    { id: 'white', name: '白雪', lv: 4, sh: 200, ss: 0.7, sv: 1.2, o: { s: 0.25, va: 0.42, vm: 1.25 } },
+    { id: 'crimson', name: '赤鬼', lv: 5, sh: 48, sv: 1.3, o: { h: 355, s: 0.7, va: 0.12, vm: 1.5 } },
+  ];
+  const LEVEL_XP = [0, 1500, 4000, 8000, 14000]; // 升到各等級所需的累積分數
+  const levelOf = (xp) => { let lv = 1; while (lv < LEVEL_XP.length && xp >= LEVEL_XP[lv]) lv++; return lv; };
+  const skinById = (id) => SKINS.find((k) => k.id === id) || SKINS[0];
+  const currentSkin = () => { const k = skinById(save.settings.skin); return k.lv <= levelOf(save.xp) ? k : SKINS[0]; };
+  function xpInfo(xp) {
+    const lv = levelOf(xp); const max = lv >= LEVEL_XP.length;
+    const lo = LEVEL_XP[lv - 1]; const hi = max ? lo : LEVEL_XP[lv];
+    return { lv, max, ratio: max ? 1 : (xp - lo) / (hi - lo), text: max ? `累積 ${xp} 分・已達最高等級` : `累積 ${xp} 分・再 ${hi - xp} 分升級` };
+  }
+
+  // 忍者圖：5×2 格，依序為 待機、衝刺、跳躍、橫斬、上斬、月牙斬、迴旋斬、落地、架式、勝利
+  const NINJA = { cw: 458, ch: 240, idle: 0, jump: 2, slashes: [3, 4, 5, 6], land: 7, guard: 8, win: 9 };
+  const ninjaImg = new Image();
+  const skinSheets = {};
+  const hsv = (r, g, b) => {
+    const mx = Math.max(r, g, b); const d = mx - Math.min(r, g, b);
+    let h = 0;
+    if (d > 0) h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return [h * 60, mx ? d / mx : 0, mx / 255];
+  };
+  const rgb = (h, s, v) => {
+    h = ((h % 360) + 360) % 360 / 60; const i = Math.floor(h); const f = h - i;
+    const p = v * (1 - s); const q = v * (1 - f * s); const t = v * (1 - (1 - f) * s);
+    const [r, g, b] = [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][i % 6];
+    return [r * 255, g * 255, b * 255];
+  };
+  // 把畫布上的忍者換成指定造型的顏色
+  function recolor(c, skin) {
+    if (skin.sh === undefined) return;
+    try {
+      const x = c.getContext('2d'); const img = x.getImageData(0, 0, c.width, c.height); const d = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 8) continue;
+        let [h, sa, v] = hsv(d[i], d[i + 1], d[i + 2]);
+        if ((h < 14 || h > 345) && sa > 0.55 && v > 0.2) { // 圍巾
+          h = skin.sh; sa = Math.min(1, sa * (skin.ss || 1)); v = Math.min(1, v * (skin.sv || 1));
+        } else if (skin.o && sa < 0.5 && v < 0.5 && v > 0.11 && h > 170 && h < 290) { // 衣服
+          if (skin.o.h !== undefined) h = skin.o.h;
+          sa = skin.o.s; v = Math.min(1, skin.o.va + v * skin.o.vm);
+        } else continue;
+        const [r, g, b] = rgb(h, sa, v);
+        d[i] = r; d[i + 1] = g; d[i + 2] = b;
+      }
+      x.putImageData(img, 0, 0);
+    } catch (e) { /* 直接開啟檔案時瀏覽器不允許讀取像素，維持原色 */ }
+  }
+  function skinSheet(skin) {
+    if (!ninjaImg.naturalWidth) return null;
+    if (!skinSheets[skin.id]) {
+      const c = document.createElement('canvas'); c.width = ninjaImg.naturalWidth; c.height = ninjaImg.naturalHeight;
+      c.getContext('2d').drawImage(ninjaImg, 0, 0);
+      recolor(c, skin);
+      skinSheets[skin.id] = c;
+    }
+    return skinSheets[skin.id];
+  }
+  // 在小畫布上畫出造型的待機姿勢
+  function paintThumb(c, skin) {
+    if (!ninjaImg.naturalWidth) return;
+    c.width = c.height = 144;
+    c.getContext('2d').drawImage(ninjaImg, 108, 0, 240, 240, 0, 0, 144, 144);
+    recolor(c, skin);
+  }
+  function renderSkins() {
+    const info = xpInfo(save.xp); const cur = currentSkin();
+    $('#lvLabel').textContent = `忍者等級 Lv.${info.lv}`;
+    $('#xpLabel').textContent = info.text;
+    $('#xpBar').style.width = `${info.ratio * 100}%`;
+    $('#skinList').innerHTML = SKINS.map((k) => {
+      const locked = k.lv > info.lv;
+      return `<button class="skin-card${k.id === cur.id ? ' on' : ''}${locked ? ' locked' : ''}" data-skin="${k.id}"${locked ? ' disabled' : ''}>
+        <canvas data-thumb="${k.id}"></canvas><b>${k.name}</b><small>${locked ? `Lv.${k.lv} 解鎖` : k.id === cur.id ? '使用中' : '可使用'}</small></button>`;
+    }).join('');
+    document.querySelectorAll('#skinList [data-thumb]').forEach((c) => paintThumb(c, skinById(c.dataset.thumb)));
+  }
+  ninjaImg.onload = () => { if ($('#home').classList.contains('active')) renderSkins(); };
+  ninjaImg.src = 'assets/ninja.png?v=6';
 
   // ---------- 筆記本 ----------
   const itemKey = (it) => (it.r ? `k:${it.k}` : `w:${it.j}|${it.k}`);
@@ -171,6 +260,7 @@
         <span class="card-main"><div class="card-name">${lv.name}</div><div class="card-desc">${lv.desc}・${lv.stages.length} 關</div></span>
         <span class="card-side">★ ${levelStars(lv)}/${lv.stages.length * 3}</span>
       </button>`).join('');
+    renderSkins();
     $('#notebookDesc').textContent = save.notebook.length ? `已收錄 ${save.notebook.length} 個字，可以用來特訓` : '過關後可以把想記的字加進來';
     refreshSettings();
   }
@@ -280,6 +370,8 @@
       phase: 'normal', bossHp: BOSS_HP, bossHurt: 0,
       hp: sp.hp, score: 0, combo: 0, mistakes: 0, shake: 0,
       particles: [], halves: [], blasts: [], floats: [], trail: [], wave: null, waves: 0,
+      skin: currentSkin(),
+      ninja: { x: W / 2, y: H - 14, state: 'idle', t: 0, face: 1, frame: NINJA.idle, sx: 0, sy: 0, tx: 0, ty: 0 },
       banner: { text: stage.name, t: 1.3 },
       clouds: Array.from({ length: 6 }, (_, i) => ({ x: Math.random() * W, y: i * 120 - 60, s: 0.6 + Math.random() * 0.7, v: 18 + Math.random() * 16 })),
       time: 0, paused: false, over: false,
@@ -344,6 +436,7 @@
     };
     g.waves++;
     setPrompt(q);
+    if (g.ninja.state === 'win') setNinja('idle');
     if (q.kind === 'listen') say(item.k);
   }
 
@@ -413,7 +506,7 @@
         float(fruit.x, fruit.y - 30, `-${lost}`, '#e03131');
         g.shake = 0.55;
         sfx('boom');
-      } else { g.shake = 0.3; sfx('bad'); }
+      } else { g.shake = 0.3; sfx('bad'); setNinja('hurt'); }
       w.fruits.forEach((f) => { if (f !== fruit) f.state = f.opt.correct ? 'answer' : 'faded'; });
       w.rt = 2.4;
       setPrompt(w.q, fruit ? 'bad' : 'timeout');
@@ -422,6 +515,59 @@
     if (g.phase === 'normal') g.done++;
     if (save.settings.sound) say(item.k);
     updateHud();
+  }
+
+  // 忍者的動作：idle 待機 → fly 飛向水果 → slash 砍擊 → fall 落回地面 → land 落地 → win 擺姿勢
+  // 砍錯時改為 hurt：被炸飛後落回地面
+  function setNinja(state) { const n = g.ninja; n.state = state; n.t = 0; n.sx = n.x; n.sy = n.y; }
+  // 忍者先飛到水果旁邊，飛到了才真正砍下去
+  function strike(fruit, angle) {
+    const w = g.wave;
+    if (!w || w.state !== 'in') return;
+    w.state = 'strike'; w.target = fruit; w.angle = angle;
+    const n = g.ninja;
+    n.face = fruit.x >= n.x ? 1 : -1;
+    if (Math.abs(fruit.x - n.x) < 30) n.face = fruit.x >= W / 2 ? -1 : 1; // 正上方時從外側切入
+    n.tx = fruit.x - n.face * 44; n.ty = fruit.y + 66;
+    setNinja('fly');
+    sfx('slice');
+  }
+  function updateNinja(dt) {
+    const n = g.ninja; const homeY = H - 14;
+    n.t += dt;
+    const ease = (k) => 1 - Math.pow(1 - Math.min(1, k), 3);
+    if (n.state === 'fly') {
+      const k = ease(n.t / 0.17);
+      n.x = n.sx + (n.tx - n.sx) * k; n.y = n.sy + (n.ty - n.sy) * k;
+      n.frame = NINJA.jump;
+      if (n.t >= 0.17) {
+        const w = g.wave; const f = w.target; const ok = !!f.opt.correct;
+        w.state = 'in';
+        resolve(f, w.angle);
+        n.frame = pick(NINJA.slashes);
+        setNinja(ok ? 'slash' : 'hurt');
+      }
+    } else if (n.state === 'slash') {
+      n.x += n.face * 60 * dt; n.y -= 30 * dt; // 砍過去時帶一點慣性
+      if (n.t >= 0.3) setNinja('fall');
+    } else if (n.state === 'fall') {
+      const k = Math.min(1, n.t / 0.32);
+      n.x = n.sx + (W / 2 - n.sx) * k; n.y = n.sy + (homeY - n.sy) * k * k;
+      n.frame = NINJA.jump;
+      if (k >= 1) setNinja('land');
+    } else if (n.state === 'land') {
+      n.frame = NINJA.land;
+      if (n.t >= 0.2) setNinja('win');
+    } else if (n.state === 'hurt') {
+      const k = Math.min(1, n.t / 0.6);
+      n.x = n.sx + (W / 2 - n.sx) * k; n.y = n.sy + (homeY - n.sy) * k * k - Math.sin(k * Math.PI) * 30;
+      n.frame = NINJA.guard;
+      if (k >= 1) setNinja('idle');
+    } else {
+      n.x = W / 2; n.y = homeY;
+      n.frame = n.state === 'win' ? NINJA.win : NINJA.idle;
+      if (n.state === 'idle') n.face = 1;
+    }
   }
 
   // 檢查刀痕（線段）有沒有切到水果
@@ -433,7 +579,7 @@
       if (f.state !== 'alive' || !f.live) continue;
       const t = len2 ? Math.max(0, Math.min(1, ((f.x - x1) * dx + (f.y - y1) * dy) / len2)) : 0;
       const px = x1 + dx * t - f.x; const py = y1 + dy * t - f.y;
-      if (px * px + py * py <= FRUIT_R * FRUIT_R) { sfx('slice'); resolve(f, len2 > 4 ? Math.atan2(dy, dx) : -0.5); return; }
+      if (px * px + py * py <= FRUIT_R * FRUIT_R) { strike(f, len2 > 4 ? Math.atan2(dy, dx) : -0.5); return; }
     }
   }
 
@@ -447,6 +593,22 @@
     const newBest = !custom && win && g.score > (p.best || 0);
     if (win && !custom) { p.stars = Math.max(p.stars || 0, stars); p.best = Math.max(p.best || 0, g.score); save.progress[g.stage.id] = p; persist(); }
     sfx(win ? 'clear' : 'over');
+    // 本局得分累積成經驗值，升級時解鎖新造型
+    const lvBefore = levelOf(save.xp);
+    save.xp += g.score; persist();
+    const info = xpInfo(save.xp);
+    $('#resLv').textContent = `忍者等級 Lv.${info.lv}`;
+    $('#resXp').textContent = `+${g.score} 分・${info.text.split('・')[1]}`;
+    $('#resXpBar').style.width = `${info.ratio * 100}%`;
+    const gained = SKINS.filter((k) => k.lv > lvBefore && k.lv <= info.lv);
+    $('#levelUp').classList.toggle('hidden', info.lv === lvBefore);
+    if (info.lv > lvBefore) {
+      const newest = gained[gained.length - 1];
+      $('#levelUp').innerHTML = `<canvas id="levelUpThumb"></canvas><div><b>升級到 Lv.${info.lv}！</b><span>獲得新造型「${gained.map((k) => k.name).join('」「')}」</span>`
+        + `<button class="btn mini" id="wearBtn">換上「${newest.name}」</button></div>`;
+      paintThumb($('#levelUpThumb'), newest);
+      $('#wearBtn').onclick = () => { save.settings.skin = newest.id; persist(); $('#wearBtn').textContent = '已換上'; $('#wearBtn').disabled = true; };
+    }
 
     $('#resultTitle').textContent = win ? '過關！' : '再挑戰一次吧';
     $('#resultStars').innerHTML = starsHtml(stars);
@@ -511,13 +673,15 @@
           f.live = tau > 0.2 && f.y < H + FRUIT_R * 0.5;
         }
         if (w.t >= w.dur) resolve(null);
-      } else {
+      } else if (w.state !== 'strike') { // 忍者飛過去的瞬間時間暫停
         for (const f of w.fruits) if (f.state === 'drop') { f.vy += 1500 * dt; f.y += f.vy * dt; }
         w.rt -= dt;
         if (w.rt <= 0) { g.wave = null; nextWave(); }
       }
       for (const f of w.fruits) { f.x = f.x0 + Math.sin(g.time * 1.2 + f.ph) * 7; f.rot = Math.sin(g.time * 1.6 + f.ph) * 0.18; }
     }
+    if (g.over) return;
+    updateNinja(dt);
     if (g.over) return;
     for (const h of g.halves) { h.x += h.vx * dt; h.y += h.vy * dt; h.vy += 900 * dt; h.rot += h.vr * dt; h.life -= dt; }
     g.halves = g.halves.filter((h) => h.life > 0);
@@ -643,6 +807,26 @@
     }
   }
 
+  function drawNinja() {
+    const n = g.ninja; const sheet = skinSheet(g.skin);
+    const air = n.state === 'fly' || n.state === 'slash' || n.state === 'fall' || n.state === 'hurt';
+    const dh = n.state === 'slash' ? 132 : 112; const dw = dh * NINJA.cw / NINJA.ch;
+    if (!air) { // 站在地上時的影子
+      ctx.fillStyle = 'rgba(74,64,99,.18)'; ctx.beginPath(); ctx.ellipse(n.x, H - 12, 34, 7, 0, 0, 7); ctx.fill();
+    }
+    if (n.state === 'hurt' && Math.floor(g.time * 18) % 2) return;
+    ctx.save();
+    ctx.translate(n.x, n.y + (n.state === 'idle' ? Math.sin(g.time * 3) * 1.5 : 0));
+    if (n.state === 'hurt') { ctx.translate(0, -50); ctx.rotate(n.t * 9 * -n.face); ctx.translate(0, 50); }
+    ctx.scale(n.face, 1);
+    if (sheet) {
+      ctx.drawImage(sheet, (n.frame % 5) * NINJA.cw, Math.floor(n.frame / 5) * NINJA.ch, NINJA.cw, NINJA.ch, -dw / 2, -dh * 0.93, dw, dh);
+    } else { // 圖片還沒載入時的替代圖形
+      ctx.fillStyle = '#4a4063'; ctx.beginPath(); ctx.arc(0, -40, 22, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function drawBoss() {
     const hurt = g.bossHurt > 0;
     const x = W / 2 + (hurt ? Math.sin(g.time * 60) * 5 : 0); const y = 70 + Math.sin(g.time * 2) * 4;
@@ -692,6 +876,7 @@
       drawBlast(b);
       if (b.t < 0.18) { ctx.fillStyle = `rgba(255,120,60,${0.4 * (1 - b.t / 0.18)})`; ctx.fillRect(-20, -20, W + 40, H + 40); }
     }
+    drawNinja();
     drawTrail();
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for (const f of g.floats) {
@@ -707,12 +892,6 @@
       ctx.fillStyle = '#f76a8c';
       fit(g.banner.text, W - 110, 26, ZH_FONT.replace('sans-serif', JP_FONT));
       ctx.fillText(g.banner.text, W / 2, H / 2 - 6);
-    }
-    if (g.waves <= 1 && g.phase === 'normal') {
-      ctx.fillStyle = 'rgba(74,64,99,.75)';
-      ctx.font = `700 13px ${ZH_FONT}`;
-      const tip = matchMedia('(pointer: coarse)').matches ? '用手指劃過正確答案的水果' : '按住滑鼠劃過正確的水果，或按 1、2、3';
-      ctx.fillText(tip, W / 2, H - 14);
     }
   }
 
@@ -776,7 +955,7 @@
     const w = g.wave;
     if (/^[1-3]$/.test(e.key)) {
       const f = w && w.state === 'in' && w.fruits[+e.key - 1];
-      if (f && f.state === 'alive' && f.live) { sfx('slice'); resolve(f, -0.5); }
+      if (f && f.state === 'alive' && f.live) strike(f, -0.5);
     } else if (e.key === 'r' || e.key === 'R') { if (w && w.q.kind === 'listen') say(w.q.item.k); } else return;
     e.preventDefault();
   });
@@ -791,6 +970,10 @@
   $('#listenToggle').addEventListener('click', () => {
     save.settings.listening = !save.settings.listening; persist(); refreshSettings();
     if (save.settings.listening) say('こんにちは');
+  });
+  $('#skinList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-skin]'); if (!b || b.disabled) return;
+    save.settings.skin = b.dataset.skin; persist(); renderSkins();
   });
   $('#kanjiToggle').addEventListener('click', () => { save.settings.noKanji = !save.settings.noKanji; persist(); refreshSettings(); });
   $('#soundSeg').addEventListener('click', (e) => {
@@ -828,5 +1011,5 @@
     setTimeout(() => { voicesChecked = true; findVoice(); }, 1500);
   } else voicesChecked = true;
   renderHome();
-  window.__jt = { get state() { return g; }, buildQuestion };
+  window.__jt = { get state() { return g; }, buildQuestion, save };
 })();

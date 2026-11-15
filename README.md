@@ -28,4 +28,4 @@
 python3 -m http.server 8000
 ```
 
-題庫在 `js/data.js`，遊戲邏輯在 `js/game.js`，魔王圖片在 `assets/boss.png`，忍者動作圖在 `assets/ninja.png`（各造型由程式換色產生）。
+題庫在 `js/data.js`，遊戲邏輯在 `js/game.js`，魔王圖片在 `assets/boss.png`，忍者動作圖在 `assets/ninja.png`（各色造型由程式換色產生），長頸鹿忍者在 `assets/giraffe.png`。

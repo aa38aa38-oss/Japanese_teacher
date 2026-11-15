@@ -15,7 +15,7 @@
   const FRUIT_R = 48;
   const PENALTY = 50; // 切錯扣的分數
   const bossImg = new Image();
-  bossImg.src = 'assets/boss.png?v=6';
+  bossImg.src = 'assets/boss.png?v=7';
   const JP_FONT = '"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP","Noto Sans CJK JP","Meiryo",sans-serif';
   const ZH_FONT = '"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif';
   const SPEAKER_SVG = '<svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
@@ -46,12 +46,13 @@
     { id: 'red', name: '紅蓮', lv: 1 },
     { id: 'blue', name: '蒼嵐', lv: 1, sh: 215 },
     { id: 'green', name: '翠風', lv: 1, sh: 140, sv: 0.9 },
-    { id: 'purple', name: '紫電', lv: 2, sh: 280 },
-    { id: 'gold', name: '黃金', lv: 3, sh: 45, ss: 0.9, sv: 1.25 },
-    { id: 'white', name: '白雪', lv: 4, sh: 200, ss: 0.7, sv: 1.2, o: { s: 0.25, va: 0.42, vm: 1.25 } },
-    { id: 'crimson', name: '赤鬼', lv: 5, sh: 48, sv: 1.3, o: { h: 355, s: 0.7, va: 0.12, vm: 1.5 } },
+    { id: 'giraffe', name: '長頸鹿', lv: 2, sheet: 'giraffe' }, // 使用另一張動作圖
+    { id: 'purple', name: '紫電', lv: 3, sh: 280 },
+    { id: 'gold', name: '黃金', lv: 4, sh: 45, ss: 0.9, sv: 1.25 },
+    { id: 'white', name: '白雪', lv: 5, sh: 200, ss: 0.7, sv: 1.2, o: { s: 0.25, va: 0.42, vm: 1.25 } },
+    { id: 'crimson', name: '赤鬼', lv: 6, sh: 48, sv: 1.3, o: { h: 355, s: 0.7, va: 0.12, vm: 1.5 } },
   ];
-  const LEVEL_XP = [0, 1500, 4000, 8000, 14000]; // 升到各等級所需的累積分數
+  const LEVEL_XP = [0, 1500, 4000, 8000, 14000, 22000]; // 升到各等級所需的累積分數
   const levelOf = (xp) => { let lv = 1; while (lv < LEVEL_XP.length && xp >= LEVEL_XP[lv]) lv++; return lv; };
   const skinById = (id) => SKINS.find((k) => k.id === id) || SKINS[0];
   const currentSkin = () => { const k = skinById(save.settings.skin); return k.lv <= levelOf(save.xp) ? k : SKINS[0]; };
@@ -64,6 +65,8 @@
   // 忍者圖：5×2 格，依序為 待機、衝刺、跳躍、橫斬、上斬、月牙斬、迴旋斬、落地、架式、勝利
   const NINJA = { cw: 458, ch: 240, idle: 0, jump: 2, slashes: [3, 4, 5, 6], land: 7, guard: 8, win: 9 };
   const ninjaImg = new Image();
+  const giraffeImg = new Image();
+  const sheetImg = (skin) => (skin.sheet === 'giraffe' ? giraffeImg : ninjaImg);
   const skinSheets = {};
   const hsv = (r, g, b) => {
     const mx = Math.max(r, g, b); const d = mx - Math.min(r, g, b);
@@ -98,10 +101,11 @@
     } catch (e) { /* 直接開啟檔案時瀏覽器不允許讀取像素，維持原色 */ }
   }
   function skinSheet(skin) {
-    if (!ninjaImg.naturalWidth) return null;
+    const img = sheetImg(skin);
+    if (!img.naturalWidth) return null;
     if (!skinSheets[skin.id]) {
-      const c = document.createElement('canvas'); c.width = ninjaImg.naturalWidth; c.height = ninjaImg.naturalHeight;
-      c.getContext('2d').drawImage(ninjaImg, 0, 0);
+      const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
       recolor(c, skin);
       skinSheets[skin.id] = c;
     }
@@ -109,9 +113,10 @@
   }
   // 在小畫布上畫出造型的待機姿勢
   function paintThumb(c, skin) {
-    if (!ninjaImg.naturalWidth) return;
+    const img = sheetImg(skin);
+    if (!img.naturalWidth) return;
     c.width = c.height = 144;
-    c.getContext('2d').drawImage(ninjaImg, 108, 0, 240, 240, 0, 0, 144, 144);
+    c.getContext('2d').drawImage(img, 108, 0, 240, 240, 0, 0, 144, 144);
     recolor(c, skin);
   }
   function renderSkins() {
@@ -126,8 +131,9 @@
     }).join('');
     document.querySelectorAll('#skinList [data-thumb]').forEach((c) => paintThumb(c, skinById(c.dataset.thumb)));
   }
-  ninjaImg.onload = () => { if ($('#home').classList.contains('active')) renderSkins(); };
-  ninjaImg.src = 'assets/ninja.png?v=6';
+  ninjaImg.onload = giraffeImg.onload = () => { if ($('#home').classList.contains('active')) renderSkins(); };
+  ninjaImg.src = 'assets/ninja.png?v=7';
+  giraffeImg.src = 'assets/giraffe.png?v=7';
 
   // ---------- 筆記本 ----------
   const itemKey = (it) => (it.r ? `k:${it.k}` : `w:${it.j}|${it.k}`);

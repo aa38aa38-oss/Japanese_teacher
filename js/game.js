@@ -15,7 +15,7 @@
   const FRUIT_R = 48;
   const PENALTY = 50; // 切錯扣的分數
   const bossImg = new Image();
-  bossImg.src = 'assets/boss.png?v=8';
+  bossImg.src = 'assets/boss.png?v=9';
   const JP_FONT = '"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP","Noto Sans CJK JP","Meiryo",sans-serif';
   const ZH_FONT = '"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif';
   const SPEAKER_SVG = '<svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
@@ -119,7 +119,7 @@
   const sheetImgs = {};
   function skinSheet(skin) {
     if (skin.sheet) { // 有自己動作圖的造型，用到時才下載
-      if (!sheetImgs[skin.id]) { sheetImgs[skin.id] = new Image(); sheetImgs[skin.id].src = `assets/skins/${skin.id}.webp?v=8`; }
+      if (!sheetImgs[skin.id]) { sheetImgs[skin.id] = new Image(); sheetImgs[skin.id].src = `assets/skins/${skin.id}.webp?v=9`; }
       return sheetImgs[skin.id].naturalWidth ? sheetImgs[skin.id] : null;
     }
     if (!ninjaImg.naturalWidth) return null;
@@ -142,6 +142,14 @@
     c.getContext('2d').drawImage(ninjaImg, 108, 0, 240, 240, 0, 0, 144, 144);
     recolor(c, skin);
   }
+  // 選單右上角顯示目前的忍者
+  function renderChip() {
+    const cur = currentSkin();
+    $('#chipName').textContent = cur.name;
+    paintThumb($('#chipThumb'), cur);
+  }
+  // 最初始的畫面：選擇忍者
+  function renderPick() { renderSkins(); show('pick'); }
   function renderSkins() {
     const info = xpInfo(save.xp); const cur = currentSkin();
     $('#lvLabel').textContent = `忍者等級 Lv.${info.lv}`;
@@ -153,10 +161,14 @@
         <canvas data-thumb="${k.id}"></canvas><b>${k.name}</b><small>${locked ? `Lv.${k.lv} 解鎖` : k.id === cur.id ? '使用中' : '可使用'}</small></button>`;
     }).join('');
     document.querySelectorAll('#skinList [data-thumb]').forEach((c) => paintThumb(c, skinById(c.dataset.thumb)));
+    $('#pickStart').textContent = `用「${cur.name}」開始遊戲`;
   }
-  ninjaImg.onload = thumbsImg.onload = () => { if ($('#home').classList.contains('active')) renderSkins(); };
-  ninjaImg.src = 'assets/ninja.png?v=8';
-  thumbsImg.src = 'assets/skins/thumbs.webp?v=8';
+  ninjaImg.onload = thumbsImg.onload = () => {
+    if ($('#pick').classList.contains('active')) renderSkins();
+    else if ($('#home').classList.contains('active')) renderChip();
+  };
+  ninjaImg.src = 'assets/ninja.png?v=9';
+  thumbsImg.src = 'assets/skins/thumbs.webp?v=9';
 
   // ---------- 筆記本 ----------
   const itemKey = (it) => (it.r ? `k:${it.k}` : `w:${it.j}|${it.k}`);
@@ -289,7 +301,7 @@
         <span class="card-main"><div class="card-name">${lv.name}</div><div class="card-desc">${lv.desc}・${lv.stages.length} 關</div></span>
         <span class="card-side">★ ${levelStars(lv)}/${lv.stages.length * 3}</span>
       </button>`).join('');
-    renderSkins();
+    renderChip();
     $('#notebookDesc').textContent = save.notebook.length ? `已收錄 ${save.notebook.length} 個字，可以用來特訓` : '過關後可以把想記的字加進來';
     refreshSettings();
   }
@@ -1013,6 +1025,9 @@
   });
   $('#levelList').addEventListener('click', (e) => { const b = e.target.closest('[data-level]'); if (b) renderStages(+b.dataset.level); });
   $('#stageList').addEventListener('click', (e) => { const b = e.target.closest('[data-stage]'); if (b) startGame({ li: curLevel, si: +b.dataset.stage }); });
+  $('#pickStart').addEventListener('click', () => { renderHome(); show('home'); });
+  $('#homeBack').addEventListener('click', renderPick);
+  $('#ninjaChip').addEventListener('click', renderPick);
   $('#stagesBack').addEventListener('click', () => { renderHome(); show('home'); });
   const closeIntro = (never) => {
     if (never) { save.settings.skipIntro = true; persist(); }
@@ -1040,6 +1055,6 @@
     if (synth.addEventListener) synth.addEventListener('voiceschanged', findVoice);
     setTimeout(() => { voicesChecked = true; findVoice(); }, 1500);
   } else voicesChecked = true;
-  renderHome();
+  renderPick();
   window.__jt = { get state() { return g; }, buildQuestion, save };
 })();

@@ -15,7 +15,7 @@
   const FRUIT_R = 48;
   const PENALTY = 50; // 切錯扣的分數
   const bossImg = new Image();
-  bossImg.src = 'assets/boss.png?v=10';
+  bossImg.src = 'assets/boss.png?v=11';
   const JP_FONT = '"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP","Noto Sans CJK JP","Meiryo",sans-serif';
   const ZH_FONT = '"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif';
   const SPEAKER_SVG = '<svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
@@ -119,7 +119,7 @@
   const sheetImgs = {};
   function skinSheet(skin) {
     if (skin.sheet) { // 有自己動作圖的造型，用到時才下載
-      if (!sheetImgs[skin.id]) { sheetImgs[skin.id] = new Image(); sheetImgs[skin.id].src = `assets/skins/${skin.id}.webp?v=10`; }
+      if (!sheetImgs[skin.id]) { sheetImgs[skin.id] = new Image(); sheetImgs[skin.id].src = `assets/skins/${skin.id}.webp?v=11`; }
       return sheetImgs[skin.id].naturalWidth ? sheetImgs[skin.id] : null;
     }
     if (!ninjaImg.naturalWidth) return null;
@@ -167,8 +167,8 @@
     if ($('#pick').classList.contains('active')) renderSkins();
     else if ($('#home').classList.contains('active')) renderChip();
   };
-  ninjaImg.src = 'assets/ninja.png?v=10';
-  thumbsImg.src = 'assets/skins/thumbs.webp?v=10';
+  ninjaImg.src = 'assets/ninja.png?v=11';
+  thumbsImg.src = 'assets/skins/thumbs.webp?v=11';
 
   // ---------- 新角色出場特寫 ----------
   let unlockTimer = 0;
@@ -333,12 +333,14 @@
   }
 
   function renderHome() {
-    $('#levelList').innerHTML = LEVELS.map((lv, i) => `
+    const card = (lv, i) => `
       <button class="level-card" data-level="${i}">
-        <span class="level-icon${lv.icon.length > 1 ? ' small' : ''}" lang="ja">${lv.icon}</span>
+        <span class="level-icon${lv.icon.length > 1 ? ' small' : ''}" lang="ja"${lv.color ? ` style="background:${lv.color}"` : ''}>${lv.icon}</span>
         <span class="card-main"><div class="card-name">${lv.name}</div><div class="card-desc">${lv.desc}・${lv.stages.length} 關</div></span>
         <span class="card-side">★ ${levelStars(lv)}/${lv.stages.length * 3}</span>
-      </button>`).join('');
+      </button>`;
+    $('#levelList').innerHTML = LEVELS.map((lv, i) => (lv.theme ? '' : card(lv, i))).join('');
+    $('#themeList').innerHTML = LEVELS.map((lv, i) => (lv.theme ? card(lv, i) : '')).join('');
     renderChip();
     $('#notebookDesc').textContent = save.notebook.length ? `已收錄 ${save.notebook.length} 個字，可以用來特訓` : '過關後可以把想記的字加進來';
     refreshSettings();
@@ -1064,7 +1066,9 @@
     save.settings.sound = b.dataset.sound === 'on'; persist(); refreshSettings();
     if (save.settings.sound) sfx('ok'); else if (synth) synth.cancel();
   });
-  $('#levelList').addEventListener('click', (e) => { const b = e.target.closest('[data-level]'); if (b) renderStages(+b.dataset.level); });
+  const openLevel = (e) => { const b = e.target.closest('[data-level]'); if (b) renderStages(+b.dataset.level); };
+  $('#levelList').addEventListener('click', openLevel);
+  $('#themeList').addEventListener('click', openLevel);
   $('#stageList').addEventListener('click', (e) => { const b = e.target.closest('[data-stage]'); if (b) startGame({ li: curLevel, si: +b.dataset.stage }); });
   $('#pickStart').addEventListener('click', () => { renderHome(); show('home'); });
   $('#homeBack').addEventListener('click', renderPick);
